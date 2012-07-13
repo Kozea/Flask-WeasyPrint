@@ -1,0 +1,4 @@
+*.pyc
+*.egg-info
+/.tox
+/docs/_build
