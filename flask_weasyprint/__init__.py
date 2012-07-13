@@ -39,8 +39,14 @@ def make_url_fetcher():
     return flask_url_fetcher
 
 
-def HTML(guess, *args, **kwargs):
+def HTML(*args, **kwargs):
+    if args:
+        guess = args[0]
+        args = args[1:]
+    else:
+        guess = kwargs.pop('guess', None)
     if guess is not None and not hasattr(guess, 'read'):
+        # Assume a (possibly relative) URL as a string
         guess = urlparse.urljoin(flask.request.url, guess)
     kwargs['url_fetcher'] = make_url_fetcher()
     return weasyprint.HTML(guess, *args, **kwargs)
