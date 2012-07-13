@@ -18,7 +18,7 @@ import urlparse
 import cairo
 import flask
 
-from flask_weasyprint import make_url_fetcher, HTML
+from flask_weasyprint import make_url_fetcher, HTML, CSS
 from flask_weasyprint.test_app import app
 
 
@@ -41,12 +41,13 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         assert result['string'].strip().startswith('<svg xmlns=')
         assert result['mime_type'] == 'image/svg+xml'
 
-    def test_HTML(self):
+    def test_wrappers(self):
         with app.test_request_context(base_url='http://example.org/bar/'):
             # HTML can also be used with named parameters only:
             html = HTML(url='http://example.org/bar/foo/')
-        pdf = html.write_pdf()
-        assert pdf.startswith(b'%PDF')
+            css = CSS(url='http://example.org/bar/static/style.css')
+        assert hasattr(html, 'root_element')
+        assert hasattr(css, 'rules')
 
     def test_pdf(self):
         client = app.test_client()
