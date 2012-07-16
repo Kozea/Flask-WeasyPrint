@@ -19,7 +19,7 @@ import cairo
 from flask import Flask, redirect
 from werkzeug.test import ClientRedirectError
 
-from flask_weasyprint import make_url_fetcher, HTML, CSS
+from flask_weasyprint import make_url_fetcher, HTML, CSS, render_pdf
 from flask_weasyprint.test_app import app
 
 
@@ -54,10 +54,17 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         client = app.test_client()
         response = client.get('/foo.pdf')
         assert response.status_code == 200
-        assert response.data.startswith(b'%PDF')
+        assert response.mimetype == 'application/pdf'
+        pdf = response.data
+        assert pdf.startswith(b'%PDF')
         # The link is somewhere in an uncompressed PDF object.
-        assert (b'/URI (http://packages.python.org/Flask-WeasyPrint/)'
-                in response.data)
+        assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
+
+        with app.test_request_context():
+            response = render_pdf(HTML(string=client.get('/foo/').data,
+                                       base_url='http://localhost/foo/'))
+        assert response.mimetype == 'application/pdf'
+        assert response.data == pdf
 
     def test_png(self):
         client = app.test_client()

@@ -68,6 +68,8 @@ HTML = _wrap(weasyprint.HTML)
 CSS = _wrap(weasyprint.CSS)
 
 
-def render_pdf(url, stylesheets=None):
-    pdf = HTML(url).write_pdf(stylesheets=stylesheets)
+def render_pdf(html, stylesheets=None):
+    if not hasattr(html, 'write_pdf'):
+        html = HTML(html)
+    pdf = html.write_pdf(stylesheets=stylesheets)
     return current_app.response_class(pdf, mimetype='application/pdf')
