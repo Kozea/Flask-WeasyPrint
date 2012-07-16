@@ -72,6 +72,8 @@ def _wrapper(class_, *args, **kwargs):
     if guess is not None and not hasattr(guess, 'read'):
         # Assume a (possibly relative) URL
         guess = urlparse.urljoin(request.url, guess)
+    if 'string' in kwargs and 'base_url' not in kwargs:
+        kwargs['base_url'] = request.url
     kwargs['url_fetcher'] = make_url_fetcher()
     return class_(guess, *args, **kwargs)
 
@@ -84,6 +86,8 @@ def HTML(*args, **kwargs):
     * If ``guess`` is not a file object, it is an URL relative to the current
       request context.
       This means that you can just pass a result from :func:`flask.url_for`.
+    * If ``string`` is passed, ``base_url`` defaults to the current
+      request’s URL.
 
     This requires a Flask request context.
 

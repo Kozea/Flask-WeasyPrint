@@ -30,11 +30,11 @@ class Config:
 
 @app.route('/')
 def index():
-    return redirect(url_for('document'))
+    return redirect(url_for('document_html'))
 
 
 @app.route('/foo/')
-def document():
+def document_html():
     return render_template('document.html',
         data=[42, 27.3, 63], labels=['Lorem', 'ipsum', 'sit'])
 

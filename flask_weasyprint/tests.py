@@ -20,7 +20,7 @@ from flask import Flask, redirect
 from werkzeug.test import ClientRedirectError
 
 from flask_weasyprint import make_url_fetcher, HTML, CSS, render_pdf
-from flask_weasyprint.test_app import app
+from flask_weasyprint.test_app import app, document_html
 
 
 class TestFlaskWeasyPrint(unittest.TestCase):
@@ -60,16 +60,14 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         # The link is somewhere in an uncompressed PDF object.
         assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
 
-        with app.test_request_context():
-            response = render_pdf(HTML(string=client.get('/foo/').data,
-                                       base_url='http://localhost/foo/'))
+        with app.test_request_context('/foo/'):
+            response = render_pdf(HTML(string=document_html()))
         assert response.mimetype == 'application/pdf'
         assert 'Content-Disposition' not in response.headers
         assert response.data == pdf
 
-        with app.test_request_context():
-            response = render_pdf(HTML(string=client.get('/foo/').data,
-                                       base_url='http://localhost/foo/'),
+        with app.test_request_context('/foo/'):
+            response = render_pdf(HTML(string=document_html()),
                                   download_filename='bar.pdf')
         assert response.mimetype == 'application/pdf'
         assert (response.headers['Content-Disposition']
