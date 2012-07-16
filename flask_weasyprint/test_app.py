@@ -10,7 +10,8 @@
 
 """
 
-from flask import Flask, render_template, request, abort, redirect, url_for
+from flask import (Flask, render_template, request, abort, redirect, url_for,
+                   Response)
 
 # Disable the Flask’s default static file handling. (See below.)
 app = Flask(__name__, static_folder=None)
@@ -52,7 +53,7 @@ def graph():
 
 ### The Flask-WeasyPrint specific code follows. Pretty simple, eh?
 
-from flask_weasyprint import render_pdf, render_png
+from flask_weasyprint import render_pdf, HTML
 
 
 @app.route('/foo.pdf')
@@ -62,7 +63,9 @@ def document_pdf():
 
 @app.route('/foo.png')
 def document_png():
-    return render_png('/')  # Same as url_for('index')
+    # We didn’t bother with helpers for the PNG output,
+    # but you can of course still use it.
+    return Response(HTML('/').write_png(), mimetype='image/png')
 
 
 ### End of Flask-WeasyPrint specific code.

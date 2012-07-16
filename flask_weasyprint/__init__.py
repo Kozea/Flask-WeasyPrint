@@ -18,8 +18,7 @@ from werkzeug.test import ClientRedirectError
 
 
 VERSION = '0.1'
-__all__ = ['VERSION', 'make_url_fetcher', 'HTML', 'CSS',
-           'render_pdf', 'render_png']
+__all__ = ['VERSION', 'make_url_fetcher', 'HTML', 'CSS', 'render_pdf']
 
 
 def make_url_fetcher():
@@ -72,8 +71,3 @@ CSS = _wrap(weasyprint.CSS)
 def render_pdf(url, stylesheets=None):
     pdf = HTML(url).write_pdf(stylesheets=stylesheets)
     return current_app.response_class(pdf, mimetype='application/pdf')
-
-
-def render_png(url, stylesheets=None, resolution=None):
-    png = HTML(url).write_png(stylesheets=stylesheets, resolution=resolution)
-    return current_app.response_class(png, mimetype='image/png')
