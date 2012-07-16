@@ -68,8 +68,12 @@ HTML = _wrap(weasyprint.HTML)
 CSS = _wrap(weasyprint.CSS)
 
 
-def render_pdf(html, stylesheets=None):
+def render_pdf(html, stylesheets=None, download_filename=None):
     if not hasattr(html, 'write_pdf'):
         html = HTML(html)
     pdf = html.write_pdf(stylesheets=stylesheets)
-    return current_app.response_class(pdf, mimetype='application/pdf')
+    response = current_app.response_class(pdf, mimetype='application/pdf')
+    if download_filename:
+        response.headers.add('Content-Disposition', 'attachment',
+                             filename=download_filename)
+    return response
