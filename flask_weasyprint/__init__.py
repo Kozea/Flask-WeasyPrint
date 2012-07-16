@@ -14,6 +14,7 @@ import urlparse
 
 import weasyprint
 from flask import request, current_app
+from werkzeug.test import ClientRedirectError
 
 
 VERSION = '0.1'
@@ -25,19 +26,27 @@ def make_url_fetcher():
     url_root = request.url_root
     client = current_app.test_client()
     def flask_url_fetcher(url):
-        if not url.startswith(url_root):
-            return weasyprint.default_url_fetcher(url)
-        response = client.get(url[len(url_root):], base_url=url_root)
-        if response.status_code == 200:
-            return dict(
-                string=response.data,
-                mime_type=response.mimetype,
-                encoding=response.charset,
-                redirected_url=url)
-        if response.status_code in (301, 302, 303, 305, 307):
-            return flask_url_fetcher(response.location)
-        raise ValueError('Flask-WeasyPrint got HTTP status %i for %s'
-                         % (response.status_code, url))
+        redirect_chain = set()
+        while 1:
+            if not url.startswith(url_root):
+                return weasyprint.default_url_fetcher(url)
+            response = client.get(url[len(url_root):], base_url=url_root)
+            if response.status_code == 200:
+                return dict(
+                    string=response.data,
+                    mime_type=response.mimetype,
+                    encoding=response.charset,
+                    redirected_url=url)
+            # The test client can follow redirects, but do it ourselves
+            # to get access to the redirected URL.
+            elif response.status_code in (301, 302, 303, 305, 307):
+                redirect_chain.add(url)
+                url = response.location
+                if url in redirect_chain:
+                    raise ClientRedirectError('loop detected')
+            else:
+                raise ValueError('Flask-WeasyPrint got HTTP status %s for %s'
+                                 % (response.status, url))
     return flask_url_fetcher
 
 

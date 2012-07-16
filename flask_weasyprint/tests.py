@@ -16,7 +16,8 @@ import unittest
 import urlparse
 
 import cairo
-import flask
+from flask import Flask, redirect
+from werkzeug.test import ClientRedirectError
 
 from flask_weasyprint import make_url_fetcher, HTML, CSS
 from flask_weasyprint.test_app import app
@@ -80,6 +81,28 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         colors = [get_pixel(x, 320) for x in [180, 280, 380]]
         assert colors == app.config['GRAPH_COLORS']
         assert data[:4] == b'\x00\x00\x00\x00'  # Pixel (0, 0) is transparent
+
+    def test_redirects(self):
+        app = Flask(__name__)
+        def add_redirect(old_url, new_url):
+            app.add_url_rule(
+                old_url, 'redirect_' + old_url, lambda: redirect(new_url))
+        add_redirect('/a', '/b')
+        add_redirect('/b', '/c')
+        add_redirect('/c', '/d')
+        app.add_url_rule('/d', 'd', lambda: 'Ok')
+
+        add_redirect('/1', '/2')
+        add_redirect('/2', '/3')
+        add_redirect('/3', '/1')  # redirect loop
+
+        with app.test_request_context():
+            fetcher = make_url_fetcher()
+        result = fetcher('http://localhost/a')
+        assert result['string'] == 'Ok'
+        assert result['redirected_url'] == 'http://localhost/d'
+        self.assertRaises(ClientRedirectError, fetcher, 'http://localhost/1')
+        self.assertRaises(ValueError, fetcher, 'http://localhost/nonexistent')
 
 
 if __name__ == '__main__':
