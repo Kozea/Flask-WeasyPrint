@@ -13,29 +13,31 @@
 import urlparse
 
 import weasyprint
-import flask
+from flask import request, current_app
 
 
 VERSION = '0.1'
+__all__ = ['VERSION', 'make_url_fetcher', 'HTML', 'CSS',
+           'render_pdf', 'render_png']
 
 
 def make_url_fetcher():
-    url_root = flask.request.url_root
-    client = flask.current_app.test_client()
-    def flask_url_fetcher(fetched_url):
-        if not fetched_url.startswith(url_root):
-            return weasyprint.default_url_fetcher(fetched_url)
-        response = client.get(fetched_url[len(url_root):], base_url=url_root)
+    url_root = request.url_root
+    client = current_app.test_client()
+    def flask_url_fetcher(url):
+        if not url.startswith(url_root):
+            return weasyprint.default_url_fetcher(url)
+        response = client.get(url[len(url_root):], base_url=url_root)
         if response.status_code == 200:
             return dict(
                 string=response.data,
                 mime_type=response.mimetype,
                 encoding=response.charset,
-                redirected_url=fetched_url)
+                redirected_url=url)
         if response.status_code in (301, 302, 303, 305, 307):
             return flask_url_fetcher(response.location)
         raise ValueError('Flask-WeasyPrint got HTTP status %i for %s'
-                         % (response.status_code, fetched_url))
+                         % (response.status_code, url))
     return flask_url_fetcher
 
 
@@ -48,7 +50,7 @@ def _wrap(class_):
             guess = kwargs.pop('guess', None)
         if guess is not None and not hasattr(guess, 'read'):
             # Assume a (possibly relative) URL
-            guess = urlparse.urljoin(flask.request.url, guess)
+            guess = urlparse.urljoin(request.url, guess)
         kwargs['url_fetcher'] = make_url_fetcher()
         return class_(guess, *args, **kwargs)
     wrapper.__name__ = class_.__name__
@@ -60,9 +62,9 @@ CSS = _wrap(weasyprint.CSS)
 
 def render_pdf(url, stylesheets=None):
     pdf = HTML(url).write_pdf(stylesheets=stylesheets)
-    return flask.current_app.response_class(pdf, mimetype='application/pdf')
+    return current_app.response_class(pdf, mimetype='application/pdf')
 
 
 def render_png(url, stylesheets=None, resolution=None):
     png = HTML(url).write_png(stylesheets=stylesheets, resolution=resolution)
-    return flask.current_app.response_class(png, mimetype='image/png')
+    return current_app.response_class(png, mimetype='image/png')
