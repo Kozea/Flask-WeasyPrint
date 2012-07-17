@@ -21,6 +21,8 @@ within a Flask :ref:`request context <flask:request-context>`.
 :func:`render_pdf` is a helper function to make a :class:`~flask.Response`
 with the correct MIME type.
 
+``hello.py`` is a simple Flask application:
+
 .. code-block:: python
 
     from flask import Flask, render_template, url_for
@@ -28,24 +30,49 @@ with the correct MIME type.
 
     app = Flask(__name__)
 
-    @app.route('/lorem/ipsum_<int:lipsum_id>/'):
-    def lipsum(lipsum_id):
-        # A normal HTML view
-        data = ...
-        return render_template('lipsum.html', **data)
+    @app.route('/', defaults={'name': 'World'):
+    @app.route('/hello/<name>/'):
+    def hello_html(name):
+        return render_template('hello.html', name=name)
 
-    @app.route('/lorem/ipsum_<int:lipsum_id>.pdf'):
-    def lipsum_pdf(lipsum_id):
+    @app.route('/hello_<name>.pdf'):
+    def hello_pdf(name):
         # Make a PDF from another view
-        return render_pdf(url_for('lipsum', lipsum_id=lipsum_id))
+        return render_pdf(url_for('hello_html', name=name))
 
     # Alternatively, if the PDF does not have a matching HTML page:
 
-    @app.route('/lorem/ipsum_<int:lipsum_id>.pdf'):
-    def lipsum_pdf(lipsum_id):
+    @app.route('/hello_<name>.pdf'):
+    def hello_pdf(name):
         # Make a PDF straight from HTML in a string.
-        data = ...
-        return render_pdf(HTML(string=render_template('lipsum.html', **data)))
+        html = render_template('hello.html', name=name)
+        return render_pdf(HTML(string=html))
+
+In ``templates/hello.html``, the stylesheet is within the same app.
+Flask-WeasyPrint will fetch at the Python level it without going through
+the network. The same would apply to images that could even by dynamic:
+
+.. code-block:: html+jinja
+
+    <!doctype html>
+    <title>Hello</title>
+    <link rel=stylesheet href="{{ url_for('static', filename='style.css') }}" />
+
+    <p>Hello, {{ name }}!</p>
+    <nav><a href="{{ url_for('hello_pdf', name=name) }}">Get as PDF</a></nav>
+
+In ``static/style.css``, web browsers ignore the parts in ``@page`` and
+``@media print`` when rendering to screen:
+
+.. code-block:: css
+
+    body { font: 2em Fontin, serif }
+    nav { font-size: .7em }
+
+    @page { size: A5; margin: 1cm }
+    @media print {
+        nav { display: none }
+    }
 
 
 API
