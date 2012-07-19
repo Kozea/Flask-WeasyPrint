@@ -30,7 +30,7 @@ setup(
     platforms='any',
     install_requires=[
         'Flask',
-        'WeasyPrint>=0.12a0',
+        'WeasyPrint>=0.12',
     ],
     classifiers=[
         'Environment :: Web Environment',

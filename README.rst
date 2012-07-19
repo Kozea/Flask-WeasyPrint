@@ -1,7 +1,7 @@
 Flask-WeasyPrint
 ================
 
-Make PDF in your Flask_ app with WeasyPrint_.
+Make PDF with WeasyPrint_ in your Flask_ app.
 
 * BSD licensed
 * Python 2.6 or 2.7 only

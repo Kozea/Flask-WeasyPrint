@@ -13,6 +13,18 @@
 from flask import (Flask, render_template, request, abort, redirect, url_for,
                    Response)
 
+
+def run():
+    """A more involved application, with a dynamic SVG graph.
+
+    Run it with ``python -m flask_weasyprint.test_app`` or have a look
+    at the source code.
+
+    """
+    app.run(debug=True)
+# This function exits mostly to make a "view source" link in the docs.
+
+
 # Disable the Flask’s default static file handling. (See below.)
 app = Flask(__name__, static_folder=None)
 
@@ -51,7 +63,7 @@ def graph():
     return svg, 200, {'Content-Type': 'image/svg+xml'}
 
 
-### The Flask-WeasyPrint specific code follows. Pretty simple, eh?
+### The code specific to Flask-WeasyPrint follows. Pretty simple, eh?
 
 from flask_weasyprint import render_pdf, HTML
 
@@ -63,12 +75,12 @@ def document_pdf():
 
 @app.route('/foo.png')
 def document_png():
-    # We didn’t bother with helpers for the PNG output,
-    # but you can of course still use it.
+    # We didn’t bother to make a ``render_png`` helper
+    # but of course you can still use WeasyPrint’s PNG output.
     return Response(HTML('/').write_png(), mimetype='image/png')
 
 
-### End of Flask-WeasyPrint specific code.
+### End of code specific to Flask-WeasyPrint.
 
 
 ### The templates and static files are inlined here and served from memory.
@@ -135,4 +147,4 @@ def static(filename):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    run()

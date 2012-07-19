@@ -12,16 +12,46 @@ and working, just install the extension with pip::
     $ pip install Flask-WeasyPrint
 
 
-Quickstart
-----------
+Introduction
+------------
 
-Just import :func:`~flask_weasyprint.HTML` and :func:`~flask_weasyprint.CSS`
+Let’s assume you have a Flask application serving an HTML document at
+http://example.net/hello/ with a print-ready CSS stylesheet. WeasyPrint
+can render this document to PDF:
+
+.. code-block:: python
+
+    from weasyprint import HTML
+    pdf = HTML('http://example.net/hello/').write_pdf()
+
+WeasyPrint will fetch the stylesheet, the images as well as the document itself
+over HTTP, just like a web browser would. Of course, going through the network
+is a bit silly if WeasyPrint is running on the same server as the application.
+Flask-WeasyPrint can help:
+
+.. code-block:: python
+
+    from my_flask_application import app
+    from flask_weasyprint import HTML
+    with app.test_request_context(base_url='http://example.net/'):
+        # /hello/ is resolved relative to the context’s URL.
+        pdf = HTML('/hello/').write_pdf()
+
+Just import :func:`~flask_weasyprint.HTML` or :func:`~flask_weasyprint.CSS`
 from ``flask_weasyprint`` rather than ``weasyprint``, and use them from
 within a Flask :ref:`request context <flask:request-context>`.
-:func:`render_pdf` is a helper function to make a :class:`~flask.Response`
-with the correct MIME type.
+For URLs below the application’s root URL, Flask-WeasyPrint will short-circuit
+the network and make the request at the WSGI level, without leaving the
+Python process.
 
-``hello.py`` is a simple Flask application:
+Note that from a Flask view function you already are in a request context and
+thus do not need :meth:`~flask.Flask.test_request_context`.
+
+
+An example app
+--------------
+
+Here is a simple *hello world* application that uses Flask-WeasyPrint:
 
 .. code-block:: python
 
@@ -30,7 +60,7 @@ with the correct MIME type.
 
     app = Flask(__name__)
 
-    @app.route('/', defaults={'name': 'World'):
+    @app.route('/hello/', defaults={'name': 'World'}):
     @app.route('/hello/<name>/'):
     def hello_html(name):
         return render_template('hello.html', name=name)
@@ -48,9 +78,7 @@ with the correct MIME type.
         html = render_template('hello.html', name=name)
         return render_pdf(HTML(string=html))
 
-In ``templates/hello.html``, the stylesheet is within the same app.
-Flask-WeasyPrint will fetch at the Python level it without going through
-the network. The same would apply to images that could even by dynamic:
+``templates/hello.html``:
 
 .. code-block:: html+jinja
 
@@ -61,8 +89,7 @@ the network. The same would apply to images that could even by dynamic:
     <p>Hello, {{ name }}!</p>
     <nav><a href="{{ url_for('hello_pdf', name=name) }}">Get as PDF</a></nav>
 
-In ``static/style.css``, web browsers ignore the parts in ``@page`` and
-``@media print`` when rendering to screen:
+``static/style.css``:
 
 .. code-block:: css
 
@@ -73,6 +100,20 @@ In ``static/style.css``, web browsers ignore the parts in ``@page`` and
     @media print {
         nav { display: none }
     }
+
+
+:func:`render_pdf` helps making a :class:`~flask.Response` with the correct
+MIME type. You can give it an URL or an ``HTML`` object.
+
+In the HTML you can use :func:`~flask.url_for` or relative URLs.
+Flask-WeasyPrint will do the right thing to fetch resources and make
+hyperlinks absolute in the PDF output.
+
+In CSS, ``@page`` and ``@media print`` can be used to have print-specific
+styles. Here the "Get as PDF" link is not displayed in the PDF itself,
+although it still exists in the HTML.
+
+.. autofunction:: flask_weasyprint.test_app.run
 
 
 API

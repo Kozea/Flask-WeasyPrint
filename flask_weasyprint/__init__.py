@@ -73,6 +73,7 @@ def _wrapper(class_, *args, **kwargs):
         # Assume a (possibly relative) URL
         guess = urlparse.urljoin(request.url, guess)
     if 'string' in kwargs and 'base_url' not in kwargs:
+        # Strings do not have an "intrinsic" base URL, use the request context.
         kwargs['base_url'] = request.url
     kwargs['url_fetcher'] = make_url_fetcher()
     return class_(guess, *args, **kwargs)
