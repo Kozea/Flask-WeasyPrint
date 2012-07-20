@@ -1,0 +1,15 @@
+Version 0.2
+~~~~~~~~~~~
+
+Not released yet.
+
+Add URL dispatcher and make Flask-WeasyPrint do the right thing with
+apps that use subdomains.
+
+
+Version 0.1
+~~~~~~~~~~~
+
+Released on 2012-07-19.
+
+First public release.

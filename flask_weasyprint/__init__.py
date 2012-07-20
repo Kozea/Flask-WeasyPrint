@@ -14,36 +14,108 @@ import urlparse
 
 import weasyprint
 from flask import request, current_app
-from werkzeug.test import ClientRedirectError
+from werkzeug.test import Client, ClientRedirectError
+from werkzeug.wrappers import Response
 
 
 VERSION = '0.1'
-__all__ = ['VERSION', 'make_url_fetcher', 'HTML', 'CSS', 'render_pdf']
+__all__ = ['VERSION', 'make_flask_url_dispatcher', 'make_url_fetcher',
+           'HTML', 'CSS', 'render_pdf']
 
 
-def make_url_fetcher():
+DEFAULT_PORTS = frozenset([('http', 80), ('https', 443)])
+
+
+def make_flask_url_dispatcher():
+    """Return an URL dispatcher based on the current :ref:`request context
+    <flask:request-context>`.
+
+    You generally don’t need to call this directly.
+
+    The context is used when the dispatcher is first created but not
+    afterwards. It is not required after this function has returned.
+
+    Dispatch to the context’s app URLs below the context’s root URL.
+    If the app has a ``SERVER_NAME`` :ref:`config <flask:config>`, also
+    accept URLs that have that domain name or a subdomain thereof.
+
+    """
+    def parse_netloc(netloc):
+        """Return (hostname, port)."""
+        parsed = urlparse.urlsplit('http://' + netloc)
+        return parsed.hostname, parsed.port
+
+    app = current_app._get_current_object()
+    req_scheme = request.scheme
+    req_hostname, req_port = parse_netloc(request.host)
+    if (req_scheme, req_port) in DEFAULT_PORTS:
+        req_port = None
+    req_prefix = (req_scheme, req_hostname, req_port)
+    req_root = request.script_root
+    len_req_root = len(req_root)
+
+    server_name = app.config.get('SERVER_NAME')
+    if server_name:
+        app_hostname, app_port = parse_netloc(server_name)
+        dot_app_hostname = '.' + app_hostname
+
+        def accept(url, url_port):
+            return (((url.scheme, url.hostname, url_port) == req_prefix or (
+                # Don’t assume a scheme for SERVER_NAME
+                (url.hostname == app_hostname or
+                    url.hostname.endswith(dot_app_hostname)) and
+                url_port == app_port)
+            ) and url.path.startswith(req_root))
+    else:
+        def accept(url, url_port):
+            return ((url.scheme, url.hostname, url_port) == req_prefix
+                    and url.path.startswith(req_root))
+
+    def dispatch(url_string):
+        url = urlparse.urlsplit(url_string)
+        url_port = url.port
+        if (url.scheme, url_port) in DEFAULT_PORTS:
+            url_port = None
+        if accept(url, url_port):
+            base_url = urlparse.urlunsplit(
+                (url.scheme, url.netloc, req_root, '', ''))
+            path = urlparse.urlunsplit(
+                ('', '', url.path[len_req_root:], url.query, url.fragment))
+            return app, base_url, path
+
+    return dispatch
+
+
+def make_url_fetcher(dispatcher=None,
+                     next_fetcher=weasyprint.default_url_fetcher):
     """Return an function suitable as a ``url_fetcher`` in WeasyPrint.
     You generally don’t need to call this directly.
 
-    This requires a Flask :ref:`request context <flask:request-context>`.
-    The current application and its root URL (based on ``wsgi.url_scheme``,
-    ``HTTP_HOST`` and ``SCRIPT_NAME``) are taken from this context when the
-    fetcher is first created. The context is not needed when the fetcher
-    is used (when rendering with WeasyPrint).
+    If ``dispatcher`` is not  provided, :func:`make_flask_url_dispatcher`
+    is called to get on. This requires a request context.
 
-    Requests for URLs below the application’s root URL are made directly
-    with Python calls as the WSGI level, without going through the network.
-    Other URLs are fetched normally.
+    Otherwise, it must be a callable that take an URL and return either
+    ``None`` or a ``(wsgi_callable, base_url, path)`` tuple. For None
+    ``next_fetcher`` is used. (By default, fetch normally over the network.)
+    For a tuple the request is made at the WSGI level.
+    ``wsgi_callable`` must be a Flask application or another WSGI callable.
+    ``base_url`` is the root URL for the application while ``path``
+    is the path within the application.
+    Typically ``base_url + path`` equals the passed URL.
 
     """
-    url_root = request.url_root
-    client = current_app.test_client()
+    if dispatcher is None:
+        dispatcher = make_flask_url_dispatcher()
+
     def flask_url_fetcher(url):
         redirect_chain = set()
         while 1:
-            if not url.startswith(url_root):
-                return weasyprint.default_url_fetcher(url)
-            response = client.get(url[len(url_root):], base_url=url_root)
+            result = dispatcher(url)
+            if result is None:
+                return next_fetcher(url)
+            app, base_url, path = result
+            client = Client(app, response_wrapper=Response)
+            response = client.get(path, base_url=base_url)
             if response.status_code == 200:
                 return dict(
                     string=response.data,

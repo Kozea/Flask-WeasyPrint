@@ -119,7 +119,8 @@ although it still exists in the HTML.
 API
 ---
 
-.. autofunction:: make_url_fetcher
+.. autofunction:: make_flask_url_dispatcher
+.. autofunction:: make_url_fetcher(dispatcher=None, next_fetcher=weasyprint.default_url_fetcher)
 .. autofunction:: HTML(guess=None, **kwargs)
 .. autofunction:: CSS(guess=None, **kwargs)
 .. autofunction:: render_pdf
@@ -128,9 +129,4 @@ API
 Changelog
 ---------
 
-Version 0.1
-~~~~~~~~~~~
-
-Not released yet.
-
-First public release.
+.. include:: ../CHANGES
