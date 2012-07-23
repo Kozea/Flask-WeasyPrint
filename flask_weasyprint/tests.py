@@ -16,7 +16,7 @@ import unittest
 import urlparse
 
 import cairo
-from flask import Flask, redirect
+from flask import Flask, redirect, request, json, jsonify
 from werkzeug.test import ClientRedirectError
 
 from flask_weasyprint import make_url_fetcher, HTML, CSS, render_pdf
@@ -118,6 +118,83 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         assert result['redirected_url'] == 'http://localhost/d'
         self.assertRaises(ClientRedirectError, fetcher, 'http://localhost/1')
         self.assertRaises(ValueError, fetcher, 'http://localhost/nonexistent')
+
+    def test_dispatcher(self):
+        app = Flask(__name__)
+
+        @app.route('/')
+        @app.route('/', subdomain='<sub>')
+        @app.route('/<path:path>')
+        @app.route('/<path:path>', subdomain='<sub>')
+        def catchall(sub='', path=None):
+            return jsonify(app=[sub, request.script_root, request.path,
+                                request.query_string])
+
+        def dummy_fetcher(url):
+            return {'string': 'dummy ' + url}
+
+        def assert_app(url, host, script_root, path, query_string=''):
+            """The URL was dispatched to the app with these parameters."""
+            assert json.loads(dispatcher(url)['string']) == {
+                'app': [host, script_root, path, query_string]}
+
+        def assert_dummy(url):
+            """The URL was not dispatched, the default fetcher was used."""
+            assert dispatcher(url)['string'] == 'dummy ' + url
+
+        # No SERVER_NAME config, default port
+        with app.test_request_context(base_url='http://a.net/b/'):
+            dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
+        assert_app('http://a.net/b', '', '/b', '/')
+        assert_app('http://a.net/b/', '', '/b', '/')
+        assert_app('http://a.net/b/c/d?e', '', '/b', '/c/d', 'e')
+        assert_app('http://a.net:80/b/c/d?e', '', '/b', '/c/d', 'e')
+        assert_dummy('http://a.net/other/prefix')
+        assert_dummy('http://subdomain.a.net/b/')
+        assert_dummy('http://other.net/b/')
+        assert_dummy('http://a.net:8888/b/')
+        assert_dummy('https://a.net/b/')
+
+        # Change the context’s port number
+        with app.test_request_context(base_url='http://a.net:8888/b/'):
+            dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
+        assert_app('http://a.net:8888/b', '', '/b', '/')
+        assert_app('http://a.net:8888/b/', '', '/b', '/')
+        assert_app('http://a.net:8888/b/cd?e', '', '/b', '/cd', 'e')
+        assert_dummy('http://subdomain.a.net:8888/b/')
+        assert_dummy('http://a.net:8888/other/prefix')
+        assert_dummy('http://a.net/b/')
+        assert_dummy('http://a.net:80/b/')
+        assert_dummy('https://a.net/b/')
+        assert_dummy('https://a.net:443/b/')
+        assert_dummy('https://a.net:8888/b/')
+
+        # Add a SERVER_NAME config
+        app.config['SERVER_NAME'] = 'a.net'
+        with app.test_request_context():
+            dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
+        assert_app('http://a.net', '', '', '/')
+        assert_app('http://a.net/', '', '', '/')
+        assert_app('http://a.net/b/c/d?e', '', '', '/b/c/d', 'e')
+        assert_app('http://a.net:80/b/c/d?e', '', '', '/b/c/d', 'e')
+        assert_app('https://a.net/b/c/d?e', '', '', '/b/c/d', 'e')
+        assert_app('https://a.net:443/b/c/d?e', '', '', '/b/c/d', 'e')
+        assert_app('http://subdomain.a.net/b/', 'subdomain', '', '/b/')
+        assert_dummy('http://other.net/b/')
+        assert_dummy('http://a.net:8888/b/')
+
+        # SERVER_NAME with a port number
+        app.config['SERVER_NAME'] = 'a.net:8888'
+        with app.test_request_context():
+            dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
+        assert_app('http://a.net:8888', '', '', '/')
+        assert_app('http://a.net:8888/', '', '', '/')
+        assert_app('http://a.net:8888/b/c/d?e', '', '', '/b/c/d', 'e')
+        assert_app('https://a.net:8888/b/c/d?e', '', '', '/b/c/d', 'e')
+        assert_app('http://subdomain.a.net:8888/b/', 'subdomain', '', '/b/')
+        assert_dummy('http://other.net:8888/b/')
+        assert_dummy('http://a.net:5555/b/')
+        assert_dummy('http://a.net/b/')
 
 
 if __name__ == '__main__':

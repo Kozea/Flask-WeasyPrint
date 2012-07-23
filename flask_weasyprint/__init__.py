@@ -46,41 +46,40 @@ def make_flask_url_dispatcher():
         return parsed.hostname, parsed.port
 
     app = current_app._get_current_object()
-    req_scheme = request.scheme
-    req_hostname, req_port = parse_netloc(request.host)
-    if (req_scheme, req_port) in DEFAULT_PORTS:
-        req_port = None
-    req_prefix = (req_scheme, req_hostname, req_port)
-    req_root = request.script_root
-    len_req_root = len(req_root)
+    root_path = request.script_root
 
     server_name = app.config.get('SERVER_NAME')
     if server_name:
-        app_hostname, app_port = parse_netloc(server_name)
-        dot_app_hostname = '.' + app_hostname
+        hostname, port = parse_netloc(server_name)
 
-        def accept(url, url_port):
-            return (((url.scheme, url.hostname, url_port) == req_prefix or (
-                # Don’t assume a scheme for SERVER_NAME
-                (url.hostname == app_hostname or
-                    url.hostname.endswith(dot_app_hostname)) and
-                url_port == app_port)
-            ) and url.path.startswith(req_root))
+        def accept(url):
+            """Accept any URL scheme; also accept subdomains."""
+            return (url.hostname == hostname
+                    or url.hostname.endswith('.' + hostname))
     else:
-        def accept(url, url_port):
-            return ((url.scheme, url.hostname, url_port) == req_prefix
-                    and url.path.startswith(req_root))
+        scheme = request.scheme
+        hostname, port = parse_netloc(request.host)
+        if (scheme, port) in DEFAULT_PORTS:
+            port = None
+
+        def accept(url):
+            """Do not accept subdomains."""
+            return (url.scheme, url.hostname) == (scheme, hostname)
 
     def dispatch(url_string):
         url = urlparse.urlsplit(url_string)
         url_port = url.port
         if (url.scheme, url_port) in DEFAULT_PORTS:
             url_port = None
-        if accept(url, url_port):
-            base_url = urlparse.urlunsplit(
-                (url.scheme, url.netloc, req_root, '', ''))
-            path = urlparse.urlunsplit(
-                ('', '', url.path[len_req_root:], url.query, url.fragment))
+        if accept(url) and url_port == port and url.path.startswith(root_path):
+            netloc = url.netloc
+            if url.port and not url_port:
+                netloc = netloc.rsplit(':', 1)[0]  # remove default port
+            base_url = '%s://%s%s' % (url.scheme, netloc, root_path)
+            path = url.path[len(root_path):]
+            if url.query:
+                path += '?' + url.query
+            # Ignore url.fragment
             return app, base_url, path
 
     return dispatch
@@ -101,7 +100,7 @@ def make_url_fetcher(dispatcher=None,
     ``wsgi_callable`` must be a Flask application or another WSGI callable.
     ``base_url`` is the root URL for the application while ``path``
     is the path within the application.
-    Typically ``base_url + path`` equals the passed URL.
+    Typically ``base_url + path`` is equal or equivalent to the passed URL.
 
     """
     if dispatcher is None:
@@ -130,8 +129,8 @@ def make_url_fetcher(dispatcher=None,
                 if url in redirect_chain:
                     raise ClientRedirectError('loop detected')
             else:
-                raise ValueError('Flask-WeasyPrint got HTTP status %s for %s'
-                                 % (response.status, url))
+                raise ValueError('Flask-WeasyPrint got HTTP status %s for %s%s'
+                                 % (response.status, base_url, path))
     return flask_url_fetcher
 
 
