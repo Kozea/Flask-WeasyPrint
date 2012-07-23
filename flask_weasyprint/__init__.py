@@ -18,7 +18,7 @@ from werkzeug.test import Client, ClientRedirectError
 from werkzeug.wrappers import Response
 
 
-VERSION = '0.1'
+VERSION = '0.2'
 __all__ = ['VERSION', 'make_flask_url_dispatcher', 'make_url_fetcher',
            'HTML', 'CSS', 'render_pdf']
 
@@ -91,7 +91,7 @@ def make_url_fetcher(dispatcher=None,
     You generally don’t need to call this directly.
 
     If ``dispatcher`` is not  provided, :func:`make_flask_url_dispatcher`
-    is called to get on. This requires a request context.
+    is called to get one. This requires a request context.
 
     Otherwise, it must be a callable that take an URL and return either
     ``None`` or a ``(wsgi_callable, base_url, path)`` tuple. For None
@@ -184,8 +184,8 @@ def render_pdf(html, stylesheets=None, download_filename=None):
         :meth:`~weasyprint.HTML.write_pdf`
     :param download_filename:
         If provided, the ``Content-Disposition`` header is set so that most
-        web browser will show the "Save as…" dialog with the value a default
-        filename.
+        web browser will show the "Save as…" dialog with the value as the
+        default filename.
     :returns: a :class:`flask.Response` object.
 
     """

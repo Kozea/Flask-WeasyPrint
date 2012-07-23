@@ -47,13 +47,14 @@ def index():
 
 @app.route('/foo/')
 def document_html():
-    return render_template('document.html',
-        data=[42, 27.3, 63], labels=['Lorem', 'ipsum', 'sit'])
+    return render_template(
+        'document.html', data=[42, 27.3, 63], labels=['Lorem', 'ipsum', 'sit'])
 
 
 @app.route('/foo/graph')
 def graph():
-    svg = render_template('graph.svg',
+    svg = render_template(
+        'graph.svg',
         # Turn ?data=3,2,1&labels=A,B,C into
         # [(0, ('A', 3, color0)), (1, ('B', 2, color1)), (2, ('C', 1, color2))]
         series=enumerate(zip(

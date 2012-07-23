@@ -13,7 +13,6 @@
 import io
 import struct
 import unittest
-import urlparse
 
 import cairo
 from flask import Flask, redirect, request, json, jsonify
@@ -85,6 +84,7 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         assert image.get_height() == 794
         stride = image.get_stride()
         data = image.get_data()
+
         def get_pixel(x, y):
             # cairo stores 32bit unsigned integers in *native* endianness
             uint32, = struct.unpack_from('=L', data, y * stride + x * 4)
@@ -93,15 +93,18 @@ class TestFlaskWeasyPrint(unittest.TestCase):
             rgb = uint32 & 0xffffff
             assert alpha == 0xff
             return '#%06X' % (rgb)
+
         colors = [get_pixel(x, 320) for x in [180, 280, 380]]
         assert colors == app.config['GRAPH_COLORS']
         assert data[:4] == b'\x00\x00\x00\x00'  # Pixel (0, 0) is transparent
 
     def test_redirects(self):
         app = Flask(__name__)
+
         def add_redirect(old_url, new_url):
             app.add_url_rule(
                 old_url, 'redirect_' + old_url, lambda: redirect(new_url))
+
         add_redirect('/a', '/b')
         add_redirect('/b', '/c')
         add_redirect('/c', '/d')
