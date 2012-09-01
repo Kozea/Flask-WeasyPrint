@@ -100,6 +100,22 @@ def CSS(*args, **kwargs):
     return _wrapper(weasyprint.CSS, *args, **kwargs)
 CSS.__doc__ = HTML.__doc__.replace('HTML', 'CSS').replace('html', 'css')
 
+def create_pdf(html, stylesheets=None):
+    """Return a PDF file as a bytestream.
+
+    :param html:
+        Either a :class:`weasyprint.HTML` object or an URL to be passed
+        to :func:`flask_weasyprint.HTML`. The latter case requires
+        a request context.
+    :param stylesheets:
+        A list of user stylesheets, passed to
+        :meth:`~weasyprint.HTML.write_pdf`
+    :returns: a PDF byte string.
+
+    """
+    if not hasattr(html, 'write_pdf'):
+        html = HTML(html)
+    return html.write_pdf(stylesheets=stylesheets)
 
 def render_pdf(html, stylesheets=None, download_filename=None):
     """Render a PDF to a response with the correct ``Content-Type`` header.
@@ -118,10 +134,8 @@ def render_pdf(html, stylesheets=None, download_filename=None):
     :returns: a :class:`flask.Response` object.
 
     """
-    if not hasattr(html, 'write_pdf'):
-        html = HTML(html)
-    pdf = html.write_pdf(stylesheets=stylesheets)
-    response = current_app.response_class(pdf, mimetype='application/pdf')
+    response = current_app.response_class(create_pdf(html, stylesheets),
+                                          mimetype='application/pdf')
     if download_filename:
         response.headers.add('Content-Disposition', 'attachment',
                              filename=download_filename)
