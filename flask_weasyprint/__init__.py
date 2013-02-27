@@ -18,7 +18,7 @@ from werkzeug.test import Client, ClientRedirectError
 from werkzeug.wrappers import Response
 
 
-VERSION = '0.2'
+VERSION = '0.3'
 __all__ = ['VERSION', 'make_flask_url_dispatcher', 'make_url_fetcher',
            'HTML', 'CSS', 'render_pdf']
 
@@ -67,6 +67,8 @@ def make_flask_url_dispatcher():
             return (url.scheme, url.hostname) == (scheme, hostname)
 
     def dispatch(url_string):
+        if isinstance(url_string, bytes):
+            url_string = url_string.decode('utf8')
         url = urlparse.urlsplit(url_string)
         url_port = url.port
         if (url.scheme, url_port) in DEFAULT_PORTS:
@@ -114,9 +116,11 @@ def make_url_fetcher(dispatcher=None,
                 return next_fetcher(url)
             app, base_url, path = result
             client = Client(app, response_wrapper=Response)
-            # TODO: double-check this. Apparently Werzeug %-unquotes bytes
-            # but not Unicode URLs. (IRI vs. URI or something.)
-            response = client.get(path.encode('ascii'), base_url=base_url)
+            if isinstance(path, unicode):
+                # TODO: double-check this. Apparently Werzeug %-unquotes bytes
+                # but not Unicode URLs. (IRI vs. URI or something.)
+                path = path.encode('utf8')
+            response = client.get(path, base_url=base_url)
             if response.status_code == 200:
                 return dict(
                     string=response.data,

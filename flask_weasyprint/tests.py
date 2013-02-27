@@ -199,6 +199,17 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         assert_dummy('http://a.net:5555/b/')
         assert_dummy('http://a.net/b/')
 
+    def test_funky_urls(self):
+        with app.test_request_context(base_url='http://example.net/'):
+            fetcher = make_url_fetcher()
+
+        def assert_pass(url):
+            assert fetcher(url)['string'] == u'pass !'.encode('utf8')
+
+        assert_pass(u'http://example.net/Unïĉodé/pass !')
+        assert_pass(b'http://example.net/Unïĉodé/pass !')
+        assert_pass(u'http://example.net/foo%20bar/p%61ss%C2%A0!')
+        assert_pass(b'http://example.net/foo%20bar/p%61ss%C2%A0!')
 
 if __name__ == '__main__':
     unittest.main()

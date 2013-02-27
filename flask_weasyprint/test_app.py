@@ -147,5 +147,11 @@ def static(filename):
         abort(404)
 
 
+@app.route(u'/Unïĉodé/<stuff>')
+@app.route(u'/foo bar/<stuff>')
+def funky_urls(stuff):
+    return unicode(stuff)
+
+
 if __name__ == '__main__':
     run()
