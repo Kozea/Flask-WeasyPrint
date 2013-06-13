@@ -10,15 +10,23 @@
 
 """
 
-import urlparse
-
 import weasyprint
 from flask import request, current_app
 from werkzeug.test import Client, ClientRedirectError
 from werkzeug.wrappers import Response
 
+try:
+    import urlparse
+except ImportError:  # Python 3
+    from urllib import parse as urlparse
 
-VERSION = '0.3'
+try:
+    unicode
+except NameError:  # Python 3
+    unicode = str
+
+
+VERSION = '0.4'
 __all__ = ['VERSION', 'make_flask_url_dispatcher', 'make_url_fetcher',
            'HTML', 'CSS', 'render_pdf']
 

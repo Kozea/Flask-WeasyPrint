@@ -13,6 +13,11 @@
 from flask import (Flask, render_template, request, abort, redirect, url_for,
                    Response)
 
+try:
+    unicode
+except NameError:  # Python 3
+    unicode = str
+
 
 def run():
     """A more involved application, with a dynamic SVG graph.

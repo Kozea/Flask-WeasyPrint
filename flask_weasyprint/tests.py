@@ -32,13 +32,13 @@ class TestFlaskWeasyPrint(unittest.TestCase):
             fetcher = make_url_fetcher()
 
         result = fetcher('http://example.org/bar/')
-        assert result['string'].strip().startswith('<!doctype html>')
+        assert result['string'].strip().startswith(b'<!doctype html>')
         assert result['mime_type'] == 'text/html'
         assert result['encoding'] == 'utf-8'
         assert result['redirected_url'] == 'http://example.org/bar/foo/'
 
         result = fetcher('http://example.org/bar/foo/graph?data=1&labels=A')
-        assert result['string'].strip().startswith('<svg xmlns=')
+        assert result['string'].strip().startswith(b'<svg xmlns=')
         assert result['mime_type'] == 'image/svg+xml'
 
     def test_wrappers(self):
@@ -117,13 +117,14 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         with app.test_request_context():
             fetcher = make_url_fetcher()
         result = fetcher('http://localhost/a')
-        assert result['string'] == 'Ok'
+        assert result['string'] == b'Ok'
         assert result['redirected_url'] == 'http://localhost/d'
         self.assertRaises(ClientRedirectError, fetcher, 'http://localhost/1')
         self.assertRaises(ValueError, fetcher, 'http://localhost/nonexistent')
 
     def test_dispatcher(self):
         app = Flask(__name__)
+        app.config['PROPAGATE_EXCEPTIONS'] = True
 
         @app.route('/')
         @app.route('/', subdomain='<sub>')
@@ -131,7 +132,7 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         @app.route('/<path:path>', subdomain='<sub>')
         def catchall(sub='', path=None):
             return jsonify(app=[sub, request.script_root, request.path,
-                                request.query_string])
+                                request.query_string.decode('utf8')])
 
         def dummy_fetcher(url):
             return {'string': 'dummy ' + url}
@@ -207,7 +208,7 @@ class TestFlaskWeasyPrint(unittest.TestCase):
             assert fetcher(url)['string'] == u'pass !'.encode('utf8')
 
         assert_pass(u'http://example.net/Unïĉodé/pass !')
-        assert_pass(b'http://example.net/Unïĉodé/pass !')
+        assert_pass(u'http://example.net/Unïĉodé/pass !'.encode('utf8'))
         assert_pass(u'http://example.net/foo%20bar/p%61ss%C2%A0!')
         assert_pass(b'http://example.net/foo%20bar/p%61ss%C2%A0!')
 
