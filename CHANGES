@@ -1,3 +1,11 @@
+Version 0.4
+~~~~~~~~~~~
+
+Released on 2013-06-13.
+
+Add Python 3.3 support. This requires Flask >= 0.10 and Werkzeug >= 0.9.
+
+
 Version 0.3
 ~~~~~~~~~~~
 
