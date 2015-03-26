@@ -62,8 +62,9 @@ def make_flask_url_dispatcher():
 
         def accept(url):
             """Accept any URL scheme; also accept subdomains."""
-            return (url.hostname == hostname
-                    or url.hostname.endswith('.' + hostname))
+            return url.hostname is not None and (
+                url.hostname == hostname or
+                url.hostname.endswith('.' + hostname))
     else:
         scheme = request.scheme
         hostname, port = parse_netloc(request.host)
