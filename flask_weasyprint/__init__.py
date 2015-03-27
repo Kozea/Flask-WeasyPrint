@@ -26,7 +26,7 @@ except NameError:  # Python 3
     unicode = str
 
 
-VERSION = '0.4'
+VERSION = '0.5'
 __all__ = ['VERSION', 'make_flask_url_dispatcher', 'make_url_fetcher',
            'HTML', 'CSS', 'render_pdf']
 

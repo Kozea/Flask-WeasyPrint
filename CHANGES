@@ -1,3 +1,11 @@
+Version 0.5
+~~~~~~~~~~~
+
+Released on 2015-03-27.
+
+Don't crash on URLs with no hostname, including 'data:' URLs.
+
+
 Version 0.4
 ~~~~~~~~~~~
 
