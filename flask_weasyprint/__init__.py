@@ -11,8 +11,8 @@
 """
 
 import weasyprint
-from flask import request, current_app
-from werkzeug.test import Client, ClientRedirectError
+from flask import has_request_context, request, current_app
+from werkzeug.test import Client, ClientRedirectError, EnvironBuilder
 from werkzeug.wrappers import Response
 
 try:
@@ -129,6 +129,11 @@ def make_url_fetcher(dispatcher=None,
                 # TODO: double-check this. Apparently Werzeug %-unquotes bytes
                 # but not Unicode URLs. (IRI vs. URI or something.)
                 path = path.encode('utf8')
+            if has_request_context():
+                server_name = EnvironBuilder(
+                    path, base_url=base_url).server_name
+                for (cookie_key, cookie_value) in request.cookies.items():
+                    client.set_cookie(server_name, cookie_key, cookie_value)
             response = client.get(path, base_url=base_url)
             if response.status_code == 200:
                 return dict(
