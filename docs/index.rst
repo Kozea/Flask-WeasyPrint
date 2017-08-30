@@ -6,7 +6,7 @@
 Installation
 ------------
 
-Once you `have WeasyPrint installed <http://weasyprint.org/install/>`_
+Once you `have WeasyPrint installed <http://weasyprint.readthedocs.io/en/latest/install.html>`_
 and working, just install the extension with pip::
 
     $ pip install Flask-WeasyPrint
