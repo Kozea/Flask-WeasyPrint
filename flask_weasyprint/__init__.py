@@ -26,7 +26,7 @@ except NameError:  # Python 3
     unicode = str
 
 
-VERSION = '0.5'
+VERSION = '0.5.1'
 __all__ = ['VERSION', 'make_flask_url_dispatcher', 'make_url_fetcher',
            'HTML', 'CSS', 'render_pdf']
 
@@ -187,7 +187,8 @@ def CSS(*args, **kwargs):
 CSS.__doc__ = HTML.__doc__.replace('HTML', 'CSS').replace('html', 'css')
 
 
-def render_pdf(html, stylesheets=None, download_filename=None):
+def render_pdf(html, stylesheets=None,
+               download_filename=None, automatic_download=True):
     """Render a PDF to a response with the correct ``Content-Type`` header.
 
     :param html:
@@ -201,6 +202,8 @@ def render_pdf(html, stylesheets=None, download_filename=None):
         If provided, the ``Content-Disposition`` header is set so that most
         web browser will show the "Save as…" dialog with the value as the
         default filename.
+    :param automatic_download:
+        If True, the browser will automatic download file.
     :returns: a :class:`flask.Response` object.
 
     """
@@ -209,6 +212,10 @@ def render_pdf(html, stylesheets=None, download_filename=None):
     pdf = html.write_pdf(stylesheets=stylesheets)
     response = current_app.response_class(pdf, mimetype='application/pdf')
     if download_filename:
-        response.headers.add('Content-Disposition', 'attachment',
+        if automatic_download:
+            value = 'attachment'
+        else:
+            value = 'inline'
+        response.headers.add('Content-Disposition', value,
                              filename=download_filename)
     return response

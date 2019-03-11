@@ -73,6 +73,15 @@ class TestFlaskWeasyPrint(unittest.TestCase):
                 == 'attachment; filename=bar.pdf')
         assert response.data == pdf
 
+        with app.test_request_context('/foo/'):
+            response = render_pdf(HTML(string=document_html()),
+                                  download_filename='bar.pdf',
+                                  automatic_download=False)
+        assert response.mimetype == 'application/pdf'
+        assert (response.headers['Content-Disposition']
+                == 'inline; filename=bar.pdf')
+        assert response.data == pdf
+
     def test_png(self):
         client = app.test_client()
         response = client.get('/foo.png')
