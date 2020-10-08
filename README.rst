@@ -18,3 +18,9 @@ CourtBouillon (https://www.courtbouillon.org).
 .. _on python.org: http://packages.python.org/Flask-WeasyPrint/
 .. _on Github: https://github.com/SimonSapin/Flask-WeasyPrint/
 .. _on PyPI: http://pypi.python.org/pypi/Flask-WeasyPrint
+
+Copyrights are retained by their contributors, no copyright assignment is
+required to contribute to Flask-WeasyPrint. Unless explicitly stated otherwise, 
+any contribution intentionally submitted for inclusion is licensed under the 
+BSD 3-clause license, without any additional terms or conditions. For full
+authorship information, see the version control history.
