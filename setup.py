@@ -18,10 +18,10 @@ __doc__ = README
 setup(
     name='Flask-WeasyPrint',
     version=VERSION,
-    url='https://github.com/SimonSapin/Flask-WeasyPrint',
+    url='https://github.com/Kozea/Flask-WeasyPrint',
     license='BSD',
     author='Simon Sapin',
-    author_email='simon.sapin@exyr.org',
+    author_email='contact@courtbouillon.org',
     description='Make PDF in your Flask app with WeasyPrint.',
     long_description=README,
     packages=find_packages(),
