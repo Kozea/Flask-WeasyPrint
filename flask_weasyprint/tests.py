@@ -46,8 +46,7 @@ class TestFlaskWeasyPrint(unittest.TestCase):
             # HTML can also be used with named parameters only:
             html = HTML(url='http://example.org/bar/foo/')
             css = CSS(url='http://example.org/bar/static/style.css')
-        assert hasattr(html, 'root_element')
-        assert hasattr(css, 'rules')
+        assert html.write_pdf(stylesheets=[css]).startswith(b'%PDF')
 
     def test_pdf(self):
         client = app.test_client()

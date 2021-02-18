@@ -138,7 +138,7 @@ def make_url_fetcher(dispatcher=None,
                     redirected_url=url)
             # The test client can follow redirects, but do it ourselves
             # to get access to the redirected URL.
-            elif response.status_code in (301, 302, 303, 305, 307):
+            elif response.status_code in (301, 302, 303, 305, 307, 308):
                 redirect_chain.add(url)
                 url = response.location
                 if url in redirect_chain:
