@@ -144,8 +144,9 @@ def make_url_fetcher(dispatcher=None,
                 if url in redirect_chain:
                     raise ClientRedirectError('loop detected')
             else:
-                raise ValueError('Flask-WeasyPrint got HTTP status %s for %s%s'
-                                 % (response.status, base_url, path))
+                raise ValueError(
+                    'Flask-WeasyPrint got HTTP status %s for %s%s' %
+                    (response.status, base_url, path.decode('utf8')))
     return flask_url_fetcher
 
 
