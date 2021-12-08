@@ -10,11 +10,8 @@
 
 """
 
-import io
-import struct
 import unittest
 
-import cairo
 from flask import Flask, redirect, request, json, jsonify
 from werkzeug.test import ClientRedirectError
 
@@ -55,14 +52,15 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         assert response.mimetype == 'application/pdf'
         pdf = response.data
         assert pdf.startswith(b'%PDF')
-        # The link is somewhere in an uncompressed PDF object.
         assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
 
         with app.test_request_context('/foo/'):
             response = render_pdf(HTML(string=document_html()))
         assert response.mimetype == 'application/pdf'
         assert 'Content-Disposition' not in response.headers
-        assert response.data == pdf
+        pdf = response.data
+        assert pdf.startswith(b'%PDF')
+        assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
 
         with app.test_request_context('/foo/'):
             response = render_pdf(HTML(string=document_html()),
@@ -70,7 +68,9 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         assert response.mimetype == 'application/pdf'
         assert (response.headers['Content-Disposition']
                 == 'attachment; filename=bar.pdf')
-        assert response.data == pdf
+        pdf = response.data
+        assert pdf.startswith(b'%PDF')
+        assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
 
         with app.test_request_context('/foo/'):
             response = render_pdf(HTML(string=document_html()),
@@ -79,32 +79,9 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         assert response.mimetype == 'application/pdf'
         assert (response.headers['Content-Disposition']
                 == 'inline; filename=bar.pdf')
-        assert response.data == pdf
-
-    def test_png(self):
-        client = app.test_client()
-        response = client.get('/foo.png')
-        assert response.status_code == 200
-        image = cairo.ImageSurface.create_from_png(io.BytesIO(response.data))
-        assert image.get_format() == cairo.FORMAT_ARGB32
-        # A5 (148 * 210 mm) at the default 96 dpi
-        assert image.get_width() == 560
-        assert image.get_height() == 794
-        stride = image.get_stride()
-        data = image.get_data()
-
-        def get_pixel(x, y):
-            # cairo stores 32bit unsigned integers in *native* endianness
-            uint32, = struct.unpack_from('=L', data, y * stride + x * 4)
-            # The value is ARGB, 8bit per channel
-            alpha = uint32 >> 24
-            rgb = uint32 & 0xffffff
-            assert alpha == 0xff
-            return '#%06X' % (rgb)
-
-        colors = [get_pixel(x, 320) for x in [180, 280, 380]]
-        assert colors == app.config['GRAPH_COLORS']
-        assert data[:4] == b'\x00\x00\x00\x00'  # Pixel (0, 0) is transparent
+        pdf = response.data
+        assert pdf.startswith(b'%PDF')
+        assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
 
     def test_redirects(self):
         app = Flask(__name__)

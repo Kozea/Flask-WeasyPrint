@@ -10,8 +10,7 @@
 
 """
 
-from flask import (Flask, render_template, request, abort, redirect, url_for,
-                   Response)
+from flask import Flask, render_template, request, abort, redirect, url_for
 
 try:
     unicode
@@ -71,19 +70,12 @@ def graph():
 
 ### The code specific to Flask-WeasyPrint follows. Pretty simple, eh?
 
-from flask_weasyprint import render_pdf, HTML
+from flask_weasyprint import render_pdf
 
 
 @app.route('/foo.pdf')
 def document_pdf():
     return render_pdf(url_for('index'))
-
-
-@app.route('/foo.png')
-def document_png():
-    # We didn’t bother to make a ``render_png`` helper
-    # but of course you can still use WeasyPrint’s PNG output.
-    return Response(HTML('/').write_png(), mimetype='image/png')
 
 
 ### End of code specific to Flask-WeasyPrint.
@@ -105,8 +97,7 @@ app.jinja_env.loader = DictLoader({
         <section>
             <h1><a href="http://packages.python.org/Flask-WeasyPrint/">
                 Flask-WeasyPrint</a> demo</h1>
-            <nav>Get this document <a href="/foo.pdf">as PDF</a> or
-                 <a href="/foo.png">as PNG</a>.</nav>
+            <nav>Get this document <a href="/foo.pdf">as PDF</a>.</nav>
             <p>This vector graph was generated dynamically:</p>
             <img src=graph?data={{ data|join(',')
                 }}&amp;labels={{ labels|join(',') }}>
