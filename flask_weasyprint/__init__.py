@@ -11,7 +11,7 @@
 """
 
 import weasyprint
-from flask import request, current_app
+from flask import current_app, request
 from werkzeug.test import Client, ClientRedirectError
 from werkzeug.wrappers import Response
 
@@ -26,7 +26,7 @@ except NameError:  # Python 3
     unicode = str
 
 
-VERSION = '0.6'
+VERSION = __version__ = '0.6'
 __all__ = ['VERSION', 'make_flask_url_dispatcher', 'make_url_fetcher',
            'HTML', 'CSS', 'render_pdf']
 
@@ -140,7 +140,7 @@ def make_url_fetcher(dispatcher=None,
             # to get access to the redirected URL.
             elif response.status_code in (301, 302, 303, 305, 307, 308):
                 redirect_chain.add(url)
-                url = response.location
+                url = urlparse.urljoin(url, response.location)
                 if url in redirect_chain:
                     raise ClientRedirectError('loop detected')
             else:
@@ -185,6 +185,8 @@ def HTML(*args, **kwargs):
 
 def CSS(*args, **kwargs):
     return _wrapper(weasyprint.CSS, *args, **kwargs)
+
+
 CSS.__doc__ = HTML.__doc__.replace('HTML', 'CSS').replace('html', 'css')
 
 

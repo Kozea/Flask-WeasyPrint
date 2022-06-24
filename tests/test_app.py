@@ -10,7 +10,7 @@
 
 """
 
-from flask import Flask, render_template, request, abort, redirect, url_for
+from flask import Flask, abort, redirect, render_template, request, url_for
 
 try:
     unicode
@@ -33,10 +33,9 @@ def run():
 app = Flask(__name__, static_folder=None)
 
 
-### This is a pretty standard Flask app with a dynamic SVG graph.
-### Of course the data here is always the same, but in a real app
-### it could come from a database or be computed on the fly.
-### We could also make prettier graphs with Pygal: http://pygal.org/
+# This is a pretty standard Flask app with a dynamic SVG graph.
+# Of course the data here is always the same, but in a real app
+# it could come from a database or be computed on the fly.
 
 
 @app.config.from_object
@@ -68,24 +67,23 @@ def graph():
     return svg, 200, {'Content-Type': 'image/svg+xml'}
 
 
-### The code specific to Flask-WeasyPrint follows. Pretty simple, eh?
+# The code specific to Flask-WeasyPrint follows. Pretty simple, eh?
 
-from flask_weasyprint import render_pdf
+from flask_weasyprint import render_pdf  # noqa
 
 
 @app.route('/foo.pdf')
 def document_pdf():
     return render_pdf(url_for('index'))
 
+# End of code specific to Flask-WeasyPrint.
 
-### End of code specific to Flask-WeasyPrint.
 
+# The templates and static files are inlined here and served from memory.
+# This is a bit unusual but allows us to keep this app in a single file.
+# We could just as well use normal templates and static files.
 
-### The templates and static files are inlined here and served from memory.
-### This is a bit unusual but allows us to keep this app in a single file.
-### We could just as well use normal templates and static files.
-
-from jinja2 import DictLoader
+from jinja2 import DictLoader  # noqa
 
 app.jinja_env.loader = DictLoader({
     'document.html': '''

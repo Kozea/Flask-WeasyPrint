@@ -12,11 +12,11 @@
 
 import unittest
 
-from flask import Flask, redirect, request, json, jsonify
+from flask import Flask, json, jsonify, redirect, request
+from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
 from werkzeug.test import ClientRedirectError
 
-from flask_weasyprint import make_url_fetcher, HTML, CSS, render_pdf
-from flask_weasyprint.test_app import app, document_html
+from .test_app import app, document_html
 
 
 class TestFlaskWeasyPrint(unittest.TestCase):
@@ -196,6 +196,3 @@ class TestFlaskWeasyPrint(unittest.TestCase):
         assert_pass(u'http://example.net/Unïĉodé/pass !'.encode('utf8'))
         assert_pass(u'http://example.net/foo%20bar/p%61ss%C2%A0!')
         assert_pass(b'http://example.net/foo%20bar/p%61ss%C2%A0!')
-
-if __name__ == '__main__':
-    unittest.main()
