@@ -1,198 +1,120 @@
-# coding: utf8
-"""
-    flask_weasyprint.tests
-    ~~~~~~~~~~~~~~~~~~~~~~
+"""Demonstration and testing application for Flask-WeasyPrint."""
 
-    Tests for Flask-WeasyPrint.
+from flask import Flask, abort, redirect, render_template, request, url_for
 
-    :copyright: (c) 2012 by Simon Sapin.
-    :license: BSD, see LICENSE for more details.
-
-"""
-
-import unittest
-
-from flask import Flask, json, jsonify, redirect, request
-from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
-from werkzeug.test import ClientRedirectError
-
-from .test_app import app, document_html
+# Disable the Flask’s default static file handling. (See below.)
+app = Flask(__name__, static_folder=None)
 
 
-class TestFlaskWeasyPrint(unittest.TestCase):
-    def test_url_fetcher(self):
-        # A request context is required
-        self.assertRaises(RuntimeError, make_url_fetcher)
+# This is a pretty standard Flask app with a dynamic SVG graph. Of course the
+# data here is always the same, but in a real app it could come from a database
+# or be computed on the fly.
 
-        # But only for fist creating the fetcher, not for using it.
-        with app.test_request_context(base_url='http://example.org/bar/'):
-            fetcher = make_url_fetcher()
 
-        result = fetcher('http://example.org/bar/')
-        assert result['string'].strip().startswith(b'<!doctype html>')
-        assert result['mime_type'] == 'text/html'
-        assert result['encoding'] == 'utf-8'
-        assert result['redirected_url'] == 'http://example.org/bar/foo/'
+@app.config.from_object
+class Config:
+    GRAPH_COLORS = ['#0C3795', '#752641', '#E47F00']
 
-        result = fetcher('http://example.org/bar/foo/graph?data=1&labels=A')
-        assert result['string'].strip().startswith(b'<svg xmlns=')
-        assert result['mime_type'] == 'image/svg+xml'
 
-    def test_wrappers(self):
-        with app.test_request_context(base_url='http://example.org/bar/'):
-            # HTML can also be used with named parameters only:
-            html = HTML(url='http://example.org/bar/foo/')
-            css = CSS(url='http://example.org/bar/static/style.css')
-        assert html.write_pdf(stylesheets=[css]).startswith(b'%PDF')
+@app.route('/')
+def index():
+    return redirect(url_for('document_html'))
 
-    def test_pdf(self):
-        client = app.test_client()
-        response = client.get('/foo.pdf')
-        assert response.status_code == 200
-        assert response.mimetype == 'application/pdf'
-        pdf = response.data
-        assert pdf.startswith(b'%PDF')
-        assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
 
-        with app.test_request_context('/foo/'):
-            response = render_pdf(HTML(string=document_html()))
-        assert response.mimetype == 'application/pdf'
-        assert 'Content-Disposition' not in response.headers
-        pdf = response.data
-        assert pdf.startswith(b'%PDF')
-        assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
+@app.route('/foo/')
+def document_html():
+    return render_template(
+        'document.html', data=[42, 27.3, 63], labels=['Lorem', 'ipsum', 'sit'])
 
-        with app.test_request_context('/foo/'):
-            response = render_pdf(HTML(string=document_html()),
-                                  download_filename='bar.pdf')
-        assert response.mimetype == 'application/pdf'
-        assert (response.headers['Content-Disposition']
-                == 'attachment; filename=bar.pdf')
-        pdf = response.data
-        assert pdf.startswith(b'%PDF')
-        assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
 
-        with app.test_request_context('/foo/'):
-            response = render_pdf(HTML(string=document_html()),
-                                  download_filename='bar.pdf',
-                                  automatic_download=False)
-        assert response.mimetype == 'application/pdf'
-        assert (response.headers['Content-Disposition']
-                == 'inline; filename=bar.pdf')
-        pdf = response.data
-        assert pdf.startswith(b'%PDF')
-        assert b'/URI (http://packages.python.org/Flask-WeasyPrint/)' in pdf
+@app.route('/foo/graph')
+def graph():
+    svg = render_template(
+        'graph.svg',
+        # Turn ?data=3,2,1&labels=A,B,C into
+        # [(0, ('A', 3, color0)), (1, ('B', 2, color1)), (2, ('C', 1, color2))]
+        series=enumerate(zip(
+            request.args['labels'].split(','),
+            map(float, request.args['data'].split(',')),
+            app.config['GRAPH_COLORS'])))
+    return svg, 200, {'Content-Type': 'image/svg+xml'}
 
-    def test_redirects(self):
-        app = Flask(__name__)
 
-        def add_redirect(old_url, new_url):
-            app.add_url_rule(
-                old_url, 'redirect_' + old_url, lambda: redirect(new_url))
+# The code specific to Flask-WeasyPrint follows. Pretty simple, eh?
 
-        add_redirect('/a', '/b')
-        add_redirect('/b', '/c')
-        add_redirect('/c', '/d')
-        app.add_url_rule('/d', 'd', lambda: 'Ok')
+from flask_weasyprint import render_pdf  # noqa
 
-        add_redirect('/1', '/2')
-        add_redirect('/2', '/3')
-        add_redirect('/3', '/1')  # redirect loop
 
-        with app.test_request_context():
-            fetcher = make_url_fetcher()
-        result = fetcher('http://localhost/a')
-        assert result['string'] == b'Ok'
-        assert result['redirected_url'] == 'http://localhost/d'
-        self.assertRaises(ClientRedirectError, fetcher, 'http://localhost/1')
-        self.assertRaises(ValueError, fetcher, 'http://localhost/nonexistent')
+@app.route('/foo.pdf')
+def document_pdf():
+    return render_pdf(url_for('index'))
 
-    def test_dispatcher(self):
-        app = Flask(__name__)
-        app.config['PROPAGATE_EXCEPTIONS'] = True
+# End of code specific to Flask-WeasyPrint.
 
-        @app.route('/')
-        @app.route('/', subdomain='<sub>')
-        @app.route('/<path:path>')
-        @app.route('/<path:path>', subdomain='<sub>')
-        def catchall(sub='', path=None):
-            return jsonify(app=[sub, request.script_root, request.path,
-                                request.query_string.decode('utf8')])
 
-        def dummy_fetcher(url):
-            return {'string': 'dummy ' + url}
+# The templates and static files are inlined here and served from memory. This
+# is a bit unusual but allows us to keep this app in a single file. We could
+# just as well use normal templates and static files.
 
-        def assert_app(url, host, script_root, path, query_string=''):
-            """The URL was dispatched to the app with these parameters."""
-            assert json.loads(dispatcher(url)['string']) == {
-                'app': [host, script_root, path, query_string]}
+from jinja2 import DictLoader  # noqa
 
-        def assert_dummy(url):
-            """The URL was not dispatched, the default fetcher was used."""
-            assert dispatcher(url)['string'] == 'dummy ' + url
+app.jinja_env.loader = DictLoader({
+    'document.html': '''<html>
+        {% set data = data | join(',') %}
+        {% set labels = labels | join(',') %}
+        <title>Test document</title>
+        <link rel=stylesheet
+              href="{{ url_for('static', filename='style.css') }}" />
+        <section>
+            <h1><a href="https://courtbouillon.org/">Flask-WeasyPrint</a></h1>
+            <nav>Get this document <a href="/foo.pdf">as PDF</a>.</nav>
+            <p>This vector graph was generated dynamically:</p>
+            <img src="graph?data={{ data }}&amp;labels={{ labels }}">
+        </section>
+    ''',
 
-        # No SERVER_NAME config, default port
-        with app.test_request_context(base_url='http://a.net/b/'):
-            dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
-        assert_app('http://a.net/b', '', '/b', '/')
-        assert_app('http://a.net/b/', '', '/b', '/')
-        assert_app('http://a.net/b/c/d?e', '', '/b', '/c/d', 'e')
-        assert_app('http://a.net:80/b/c/d?e', '', '/b', '/c/d', 'e')
-        assert_dummy('http://a.net/other/prefix')
-        assert_dummy('http://subdomain.a.net/b/')
-        assert_dummy('http://other.net/b/')
-        assert_dummy('http://a.net:8888/b/')
-        assert_dummy('https://a.net/b/')
+    'graph.svg': '''
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="1600" height="1000" viewBox="0 0 160 100">
+        {% for i, (label, value, color) in series %}
+            <rect x="{{ 10 + i * 50 }}" y="{{ 75 - value }}"
+                  width="40" height="{{ value }}"
+                  fill="{{ color }}" stroke="#333" rx="5" ry="5" />
+            <text x="{{ 30 + i * 50 }}" y="90"
+                  text-anchor="middle" font-size="10px">{{ label }}</text>
+        {% endfor %}
+        </svg>
+    ''',
+})
 
-        # Change the context’s port number
-        with app.test_request_context(base_url='http://a.net:8888/b/'):
-            dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
-        assert_app('http://a.net:8888/b', '', '/b', '/')
-        assert_app('http://a.net:8888/b/', '', '/b', '/')
-        assert_app('http://a.net:8888/b/cd?e', '', '/b', '/cd', 'e')
-        assert_dummy('http://subdomain.a.net:8888/b/')
-        assert_dummy('http://a.net:8888/other/prefix')
-        assert_dummy('http://a.net/b/')
-        assert_dummy('http://a.net:80/b/')
-        assert_dummy('https://a.net/b/')
-        assert_dummy('https://a.net:443/b/')
-        assert_dummy('https://a.net:8888/b/')
 
-        # Add a SERVER_NAME config
-        app.config['SERVER_NAME'] = 'a.net'
-        with app.test_request_context():
-            dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
-        assert_app('http://a.net', '', '', '/')
-        assert_app('http://a.net/', '', '', '/')
-        assert_app('http://a.net/b/c/d?e', '', '', '/b/c/d', 'e')
-        assert_app('http://a.net:80/b/c/d?e', '', '', '/b/c/d', 'e')
-        assert_app('https://a.net/b/c/d?e', '', '', '/b/c/d', 'e')
-        assert_app('https://a.net:443/b/c/d?e', '', '', '/b/c/d', 'e')
-        assert_app('http://subdomain.a.net/b/', 'subdomain', '', '/b/')
-        assert_dummy('http://other.net/b/')
-        assert_dummy('http://a.net:8888/b/')
+STATIC_FILES = {'style.css': ('text/css', '''
+    html { font-family: sans-serif }
+    section { width: 80%; margin: 2em auto }
+    a { color: inherit }
+    img { width: 100%; max-width: 600px; box-sizing: border-box;
+         border: 1px solid #888; }
 
-        # SERVER_NAME with a port number
-        app.config['SERVER_NAME'] = 'a.net:8888'
-        with app.test_request_context():
-            dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
-        assert_app('http://a.net:8888', '', '', '/')
-        assert_app('http://a.net:8888/', '', '', '/')
-        assert_app('http://a.net:8888/b/c/d?e', '', '', '/b/c/d', 'e')
-        assert_app('https://a.net:8888/b/c/d?e', '', '', '/b/c/d', 'e')
-        assert_app('http://subdomain.a.net:8888/b/', 'subdomain', '', '/b/')
-        assert_dummy('http://other.net:8888/b/')
-        assert_dummy('http://a.net:5555/b/')
-        assert_dummy('http://a.net/b/')
+    /* Print-specific styles, ignored when rendering to screen: */
+    @page { size: A5; margin: 1cm }
+    @media print { nav { display: none } }
+''')}
 
-    def test_funky_urls(self):
-        with app.test_request_context(base_url='http://example.net/'):
-            fetcher = make_url_fetcher()
 
-        def assert_pass(url):
-            assert fetcher(url)['string'] == u'pass !'.encode('utf8')
+@app.route('/static/<path:filename>')
+def static(filename):
+    if filename in STATIC_FILES:
+        content_type, body = STATIC_FILES[filename]
+        return body, 200, {'Content-Type': content_type}
+    else:  # pragma: no cover
+        abort(404)
 
-        assert_pass(u'http://example.net/Unïĉodé/pass !')
-        assert_pass(u'http://example.net/Unïĉodé/pass !'.encode('utf8'))
-        assert_pass(u'http://example.net/foo%20bar/p%61ss%C2%A0!')
-        assert_pass(b'http://example.net/foo%20bar/p%61ss%C2%A0!')
+
+@app.route(u'/Unïĉodé/<stuff>')
+@app.route(u'/foo bar/<stuff>')
+def funky_urls(stuff):
+    return stuff
+
+
+if __name__ == '__main__':  # pragma: no cover
+    app.run(debug=True)
