@@ -36,8 +36,8 @@ classifiers = [
 dynamic = ['version']
 
 [project.urls]
-Homepage = 'https://doc.courtbouillon.org/flask_weasyprint/'
-Documentation = 'https://doc.courtbouillon.org/flask_weasyprint/'
+Homepage = 'https://doc.courtbouillon.org/flask-weasyprint/'
+Documentation = 'https://doc.courtbouillon.org/flask-weasyprint'
 Code = 'https://github.com/Kozea/Flask-WeasyPrint'
 Issues = 'https://github.com/Kozea/Flask-WeasyPrint/issues'
 Changelog = 'https://github.com/Kozea/Flask-WeasyPrint/releases'

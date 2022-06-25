@@ -3,7 +3,7 @@ WeasyPrint.
 
 * Free software: BSD license
 * For Python 3.7+, tested on CPython and PyPy
-* Documentation: https://doc.courtbouillon.org/flask_weasyprint
+* Documentation: https://doc.courtbouillon.org/flask-weasyprint
 * Changelog: https://github.com/Kozea/Flask-WeasyPrint/releases
 * Code, issues, tests: https://github.com/Kozea/Flask-WeasyPrint
 * Code of conduct: https://www.courtbouillon.org/code-of-conduct
