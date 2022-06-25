@@ -79,4 +79,6 @@ texinfo_documents = [(
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
+    'flask': ('https://flask.palletsprojects.com/en/2.1.x/', None),
+    'weasyprint': ('https://doc.courtbouillon.org/weasyprint/stable/', None),
 }

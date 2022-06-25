@@ -12,8 +12,8 @@ DEFAULT_PORTS = (('http', 80), ('https', 443))
 
 
 def make_flask_url_dispatcher():
-    """Return an URL dispatcher based on the current :ref:`request context
-    <flask:request-context>`.
+    """Return an URL dispatcher based on the current :doc:`request context
+    <flask:reqcontext>`.
 
     You generally don’t need to call this directly.
 
@@ -21,7 +21,7 @@ def make_flask_url_dispatcher():
     afterwards. It is not required after this function has returned.
 
     Dispatch to the context’s app URLs below the context’s root URL.
-    If the app has a ``SERVER_NAME`` :ref:`config <flask:config>`, also
+    If the app has a ``SERVER_NAME`` :doc:`flask:config`, also
     accept URLs that have that domain name or a subdomain thereof.
 
     """
@@ -178,7 +178,7 @@ def render_pdf(html, stylesheets=None, download_filename=None,
         a request context.
     :param stylesheets:
         A list of user stylesheets, passed to
-        :meth:`~weasyprint.HTML.write_pdf`
+        :meth:`weasyprint.HTML.write_pdf`
     :param download_filename:
         If provided, the ``Content-Disposition`` header is set so that most
         web browser will show the "Save as…" dialog with the value as the
