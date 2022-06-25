@@ -3,8 +3,8 @@
 from urllib.parse import urljoin, urlsplit
 
 import weasyprint
-from flask import current_app, request
-from werkzeug.test import Client, ClientRedirectError
+from flask import current_app, has_request_context, request
+from werkzeug.test import Client, ClientRedirectError, EnvironBuilder
 from werkzeug.wrappers import Response
 
 VERSION = __version__ = '0.6'
@@ -102,6 +102,11 @@ def make_url_fetcher(dispatcher=None,
                 return next_fetcher(url)
             app, base_url, path = result
             client = Client(app, response_wrapper=Response)
+            if has_request_context() and request.cookies:
+                server_name = EnvironBuilder(
+                    path, base_url=base_url).server_name
+                for cookie_key, cookie_value in request.cookies.items():
+                    client.set_cookie(server_name, cookie_key, cookie_value)
             response = client.get(path, base_url=base_url)
             if response.status_code == 200:
                 return {
