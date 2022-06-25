@@ -24,7 +24,8 @@ def index():
 @app.route('/foo/')
 def document_html():
     return render_template(
-        'document.html', data=[42, 27.3, 63], labels=['Lorem', 'ipsum', 'sit'])
+        'document.html', data=[42, 27.3, 63], labels=['Lorem', 'ipsum', 'sit'],
+        cookie=request.cookies.get('cookie'))
 
 
 @app.route('/foo/graph')
@@ -62,7 +63,7 @@ app.jinja_env.loader = DictLoader({
     'document.html': '''<html>
         {% set data = data | join(',') %}
         {% set labels = labels | join(',') %}
-        <title>Test document</title>
+        <title>Test document{% if cookie %}{{ cookie }}{% endif %}</title>
         <link rel=stylesheet
               href="{{ url_for('static', filename='style.css') }}" />
         <section>

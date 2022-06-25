@@ -46,15 +46,18 @@ def test_wrappers():
     assert html.write_pdf(stylesheets=[css]).startswith(b'%PDF')
 
 
-@pytest.mark.parametrize('url, filename, automatic', (
-    ('/foo.pdf', None, None),
-    ('/foo/', None, True),
-    ('/foo/', 'bar.pdf', True),
-    ('/foo/', 'bar.pdf', False),
+@pytest.mark.parametrize('url, filename, automatic, cookie', (
+    ('/foo.pdf', None, None, None),
+    ('/foo.pdf', None, None, 'cookie value'),
+    ('/foo/', None, True, None),
+    ('/foo/', 'bar.pdf', True, None),
+    ('/foo/', 'bar.pdf', False, None),
 ))
-def test_pdf(url, filename, automatic):
+def test_pdf(url, filename, automatic, cookie):
     if url.endswith('.pdf'):
         client = app.test_client()
+        if cookie:
+            client.set_cookie('', 'cookie', cookie)
         response = client.get('/foo.pdf')
     else:
         with app.test_request_context('/foo/'):
@@ -65,6 +68,8 @@ def test_pdf(url, filename, automatic):
     assert response.status_code == 200
     assert response.mimetype == 'application/pdf'
     assert response.data.startswith(b'%PDF')
+    if cookie:
+        assert cookie.encode('utf8') in response.data
     assert b'/URI (https://courtbouillon.org/)' in response.data
     disposition = response.headers.get('Content-Disposition')
     if filename:
