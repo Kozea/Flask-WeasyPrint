@@ -12,16 +12,16 @@ DEFAULT_PORTS = (('http', 80), ('https', 443))
 
 
 def make_flask_url_dispatcher():
-    """Return an URL dispatcher based on the current :doc:`request context
-    <flask:reqcontext>`.
+    """Return a URL dispatcher based on the current request context.
 
     You generally don’t need to call this directly.
 
-    The context is used when the dispatcher is first created but not
-    afterwards. It is not required after this function has returned.
+    The :doc:`request context <flask:reqcontext>` is used when the dispatcher
+    is first created but not afterwards. It is not required after this function
+    has returned.
 
-    Dispatch to the context’s app URLs below the context’s root URL.
-    If the app has a ``SERVER_NAME`` :doc:`flask:config`, also
+    Dispatch to the context’s app URLs below the context’s root URL. If the
+    application has a ``SERVER_NAME`` :doc:`configuration <flask:config>`, also
     accept URLs that have that domain name or a subdomain thereof.
 
     """
@@ -77,18 +77,19 @@ def make_url_fetcher(dispatcher=None,
 
     You generally don’t need to call this directly.
 
-    If ``dispatcher`` is not  provided, :func:`make_flask_url_dispatcher`
-    is called to get one. This requires a request context.
+    If ``dispatcher`` is not provided, :func:`make_flask_url_dispatcher` is
+    called to get one. This requires a :doc:`request context
+    <flask:reqcontext>`.
 
-    Otherwise, it must be a callable that takes an URL and returns either
-    ``None`` or a ``(wsgi_callable, base_url, path)`` tuple. For ``None``,
-    ``next_fetcher`` is used. (By default, fetch normally over the network.)
-    For a tuple the request is made at the WSGI level.
+    Otherwise, it must be a callable that takes a URL and returns either
+    :obj:`None` or a ``(wsgi_callable, base_url, path)`` tuple. For
+    :obj:`None`, ``next_fetcher`` is used. (By default, fetch normally over the
+    network.) For a tuple the request is made at the WSGI level.
     ``wsgi_callable`` must be a Flask application or another WSGI callable.
-    ``base_url`` is the root URL for the application while ``path``
-    is the path within the application.
+    ``base_url`` is the root URL for the application while ``path`` is the path
+    within the application.
 
-    Typically ``base_url + path`` is equal or equivalent to the passed URL.
+    Typically ``base_url + path`` is equivalent to the passed URL.
 
     """
     if dispatcher is None:
@@ -110,10 +111,8 @@ def make_url_fetcher(dispatcher=None,
             response = client.get(path, base_url=base_url)
             if response.status_code == 200:
                 return {
-                    'string': response.data,
-                    'mime_type': response.mimetype,
-                    'encoding': response.charset,
-                    'redirected_url': url}
+                    'string': response.data, 'mime_type': response.mimetype,
+                    'encoding': response.charset, 'redirected_url': url}
             # The test client can follow redirects, but do it ourselves
             # to get access to the redirected URL.
             elif response.status_code in (301, 302, 303, 305, 307, 308):
@@ -131,8 +130,7 @@ def make_url_fetcher(dispatcher=None,
 
 def _wrapper(class_, *args, **kwargs):
     if args:
-        guess = args[0]
-        args = args[1:]
+        guess, args = args[0], args[1:]
     else:
         guess = kwargs.pop('guess', None)
     if guess is not None and not hasattr(guess, 'read'):
@@ -149,13 +147,13 @@ def HTML(*args, **kwargs):
     """Like :class:`weasyprint.HTML` but:
 
     * :func:`make_url_fetcher` is used to create an ``url_fetcher``
-    * If ``guess`` is not a file object, it is an URL relative to the current
+    * If ``guess`` is not a file object, it is a URL relative to the current
       request context. This means that you can just pass a result from
       :func:`flask.url_for`.
     * If ``string`` is passed, ``base_url`` defaults to the current
       request’s URL.
 
-    This requires a Flask request context.
+    This requires a Flask :doc:`request context <flask:reqcontext>`.
 
     """
     return _wrapper(weasyprint.HTML, *args, **kwargs)
@@ -173,18 +171,18 @@ def render_pdf(html, stylesheets=None, download_filename=None,
     """Render a PDF to a response with the correct ``Content-Type`` header.
 
     :param html:
-        Either a :class:`weasyprint.HTML` object or an URL to be passed
+        Either a :class:`weasyprint.HTML` object or a URL to be passed
         to :func:`flask_weasyprint.HTML`. The latter case requires
         a request context.
-    :param stylesheets:
+    :param list stylesheets:
         A list of user stylesheets, passed to
-        :meth:`weasyprint.HTML.write_pdf`
-    :param download_filename:
+        :meth:`weasyprint.HTML.write_pdf`.
+    :param str download_filename:
         If provided, the ``Content-Disposition`` header is set so that most
         web browser will show the "Save as…" dialog with the value as the
         default filename.
-    :param automatic_download:
-        If True, the browser will automatic download file.
+    :param bool automatic_download:
+        If :obj:`True`, the browser will automatic download file.
     :returns: a :class:`flask.Response` object.
 
     """
