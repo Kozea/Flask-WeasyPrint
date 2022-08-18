@@ -1,4 +1,4 @@
-name: WeasyPrint's tests
+name: Flask-WeasyPrint's tests
 on: [push, pull_request]
 
 jobs:
