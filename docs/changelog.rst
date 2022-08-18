@@ -2,6 +2,18 @@ Changelog
 =========
 
 
+Version 1.0.0
+~~~~~~~~~~~~~
+
+Released on 2022-08-18.
+
+Drop support of Python 2, only support Python 3.7+. This requires Flask >=
+2.0.0 and WeasyPrint 43.0.
+
+Resend cookies of the original request received by Flask if a request is then
+sent by WeasyPrint.
+
+
 Version 0.6
 ~~~~~~~~~~~
 
