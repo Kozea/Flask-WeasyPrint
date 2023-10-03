@@ -7,7 +7,7 @@ from flask import current_app, has_request_context, request
 from werkzeug.test import Client, ClientRedirectError, EnvironBuilder
 from werkzeug.wrappers import Response
 
-VERSION = __version__ = '1.0.0'
+VERSION = __version__ = '1.1.0'
 DEFAULT_PORTS = (('http', 80), ('https', 443))
 
 

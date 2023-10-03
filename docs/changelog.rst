@@ -2,6 +2,17 @@ Changelog
 =========
 
 
+Version 1.1.0
+~~~~~~~~~~~~~
+
+Released on 2023-10-03.
+
+Drop support of Python 3.7, support Python 3.12. Requires Flask >= 2.3.0 and
+WeasyPrint >= 53.0.
+
+Allow extra rendering options in render_pdf().
+
+
 Version 1.0.0
 ~~~~~~~~~~~~~
 
