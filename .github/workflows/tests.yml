@@ -9,39 +9,39 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.7', '3.8', '3.9', '3.10', 'pypy-3.8']
-        exclude:
-          # Wheels missing for this configuration
-          - os: macos-latest
-            python-version: pypy-3.8
+        python-version: ['3.12']
+        include:
+          - os: ubuntu-latest
+            python-version: '3.8'
+          - os: ubuntu-latest
+            python-version: 'pypy-3.8'
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install DejaVu and Ghostscript (Ubuntu)
+      - name: Install Ghostscript (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update -y && sudo apt-get install fonts-dejavu ghostscript -y
-      - name: Install DejaVu, Pango and Ghostscript (MacOS)
+        run: sudo apt-get update -y && sudo apt-get install ghostscript -y
+      - name: Install Pango and Ghostscript (MacOS)
         if: matrix.os == 'macos-latest'
         run: |
           rm /usr/local/bin/2to3
           brew update
-          brew tap homebrew/cask-fonts
-          brew install --cask font-dejavu
           brew install pango ghostscript
-      - name: Install DejaVu, Pango and Ghostscript (Windows)
+      - name: Install Pango and Ghostscript (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          C:\msys64\usr\bin\bash -lc 'pacman -S mingw-w64-x86_64-ttf-dejavu mingw-w64-x86_64-pango mingw-w64-x86_64-ghostscript mingw-w64-x86_64-wget --noconfirm'
-          C:\msys64\usr\bin\bash -lc 'wget https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-harfbuzz-4.3.0-1-any.pkg.tar.zst'
-          C:\msys64\usr\bin\bash -lc 'pacman -U --noconfirm mingw-w64-x86_64-harfbuzz-4.3.0-1-any.pkg.tar.zst'
-          xcopy "C:\msys64\mingw64\share\fonts\TTF" "C:\Users\runneradmin\.fonts" /e /i
+          C:\msys64\usr\bin\bash -lc 'pacman -S mingw-w64-x86_64-pango mingw-w64-x86_64-ghostscript --noconfirm'
           echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH
           rm C:\msys64\mingw64\bin\python.exe
       - name: Upgrade pip and setuptools
         run: python -m pip install --upgrade pip setuptools
       - name: Install tests’ requirements
-        run: python -m pip install .[test]
+        run: python -m pip install .[test] pytest-xdist
       - name: Launch tests
-        run: python -m pytest
+        run: python -m pytest -n auto
+      - name: Check coding style
+        run: python -m flake8
+      - name: Check imports order
+        run: python -m isort . --check --diff

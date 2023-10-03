@@ -52,7 +52,7 @@ def make_flask_url_dispatcher():
 
     def dispatch(url_string):
         if isinstance(url_string, bytes):
-            url_string = url_string.decode('utf8')
+            url_string = url_string.decode()
         url = urlsplit(url_string)
         url_port = url.port
         if (url.scheme, url_port) in DEFAULT_PORTS:
@@ -107,12 +107,13 @@ def make_url_fetcher(dispatcher=None,
                 server_name = EnvironBuilder(
                     path, base_url=base_url).server_name
                 for cookie_key, cookie_value in request.cookies.items():
-                    client.set_cookie(server_name, cookie_key, cookie_value)
+                    client.set_cookie(
+                        cookie_key, cookie_value, domain=server_name)
             response = client.get(path, base_url=base_url)
             if response.status_code == 200:
                 return {
                     'string': response.data, 'mime_type': response.mimetype,
-                    'encoding': response.charset, 'redirected_url': url}
+                    'encoding': 'utf-8', 'redirected_url': url}
             # The test client can follow redirects, but do it ourselves
             # to get access to the redirected URL.
             elif response.status_code in (301, 302, 303, 305, 307, 308):
@@ -167,7 +168,7 @@ CSS.__doc__ = HTML.__doc__.replace('HTML', 'CSS')
 
 
 def render_pdf(html, stylesheets=None, download_filename=None,
-               automatic_download=True):
+               automatic_download=True, **options):
     """Render a PDF to a response with the correct ``Content-Type`` header.
 
     :param html:
@@ -181,6 +182,8 @@ def render_pdf(html, stylesheets=None, download_filename=None,
         If provided, the ``Content-Disposition`` header is set so that most
         web browser will show the "Save as…" dialog with the value as the
         default filename.
+    :param **options:
+        Named properties given to :class:`weasyprint.HTML.write_pdf`.
     :param bool automatic_download:
         If :obj:`True`, the browser will automatic download file.
     :returns: a :class:`flask.Response` object.
@@ -188,7 +191,7 @@ def render_pdf(html, stylesheets=None, download_filename=None,
     """
     if not hasattr(html, 'write_pdf'):
         html = HTML(html)
-    pdf = html.write_pdf(stylesheets=stylesheets)
+    pdf = html.write_pdf(stylesheets=stylesheets, **options)
     response = current_app.response_class(pdf, mimetype='application/pdf')
     if download_filename:
         response.headers.add(

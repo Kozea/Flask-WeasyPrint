@@ -3,6 +3,7 @@
 import pytest
 from flask import Flask, json, jsonify, redirect, request
 from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
+from weasyprint import __version__ as weasyprint_version
 from werkzeug.test import ClientRedirectError
 
 from . import app, document_html
@@ -57,19 +58,22 @@ def test_pdf(url, filename, automatic, cookie):
     if url.endswith('.pdf'):
         client = app.test_client()
         if cookie:
-            client.set_cookie('', 'cookie', cookie)
+            client.set_cookie('cookie', cookie)
         response = client.get('/foo.pdf')
     else:
         with app.test_request_context('/foo/'):
-            response = render_pdf(
-                HTML(string=document_html()),
-                download_filename=filename,
-                automatic_download=automatic)
+            options = {
+                'download_filename': filename,
+                'automatic_download': automatic,
+            }
+            if int(weasyprint_version.split('.')[0]) >= 59:
+                options['uncompressed_pdf'] = True
+            response = render_pdf(HTML(string=document_html()), **options)
     assert response.status_code == 200
     assert response.mimetype == 'application/pdf'
     assert response.data.startswith(b'%PDF')
     if cookie:
-        assert cookie.encode('utf8') in response.data
+        assert cookie.encode() in response.data
     assert b'/URI (https://courtbouillon.org/)' in response.data
     disposition = response.headers.get('Content-Disposition')
     if filename:
@@ -115,7 +119,7 @@ def test_dispatcher():
     @app.route('/<path:path>')
     @app.route('/<path:path>', subdomain='<subdomain>')
     def catchall(subdomain='', path=None):
-        query_string = request.query_string.decode('utf8')
+        query_string = request.query_string.decode()
         app = [subdomain, request.script_root, request.path, query_string]
         return jsonify(app=app)
 
@@ -202,11 +206,11 @@ def test_dispatcher():
 
 @pytest.mark.parametrize('url', (
     'http://example.net/Unïĉodé/pass !',
-    'http://example.net/Unïĉodé/pass !'.encode('utf8'),
+    'http://example.net/Unïĉodé/pass !'.encode(),
     'http://example.net/foo%20bar/p%61ss%C2%A0!',
     b'http://example.net/foo%20bar/p%61ss%C2%A0!',
 ))
 def test_funky_urls(url):
     with app.test_request_context(base_url='http://example.net/'):
         fetcher = make_url_fetcher()
-    assert fetcher(url)['string'] == 'pass !'.encode('utf8')
+    assert fetcher(url)['string'] == 'pass !'.encode()
