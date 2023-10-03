@@ -77,4 +77,4 @@ specific part.
 
 You can find it in `Flask-WeasyPrint’s repository`_.
 
-.. _Flask-WeasyPrint’s repository: https://github.com/Kozea/Flask-WeasyPrint/blob/master/tests/__init__.py
+.. _Flask-WeasyPrint’s repository: https://github.com/Kozea/Flask-WeasyPrint/blob/main/tests/__init__.py
