@@ -167,7 +167,7 @@ CSS.__doc__ = HTML.__doc__.replace('HTML', 'CSS')
 
 
 def render_pdf(html, stylesheets=None, download_filename=None,
-               automatic_download=True):
+               automatic_download=True, **options):
     """Render a PDF to a response with the correct ``Content-Type`` header.
 
     :param html:
@@ -181,6 +181,8 @@ def render_pdf(html, stylesheets=None, download_filename=None,
         If provided, the ``Content-Disposition`` header is set so that most
         web browser will show the "Save as…" dialog with the value as the
         default filename.
+    :param **options:
+        Named properties given to :class:`weasyprint.HTML.write_pdf`.
     :param bool automatic_download:
         If :obj:`True`, the browser will automatic download file.
     :returns: a :class:`flask.Response` object.
@@ -188,7 +190,7 @@ def render_pdf(html, stylesheets=None, download_filename=None,
     """
     if not hasattr(html, 'write_pdf'):
         html = HTML(html)
-    pdf = html.write_pdf(stylesheets=stylesheets)
+    pdf = html.write_pdf(stylesheets=stylesheets, **options)
     response = current_app.response_class(pdf, mimetype='application/pdf')
     if download_filename:
         response.headers.add(
