@@ -52,7 +52,7 @@ def make_flask_url_dispatcher():
 
     def dispatch(url_string):
         if isinstance(url_string, bytes):
-            url_string = url_string.decode('utf8')
+            url_string = url_string.decode()
         url = urlsplit(url_string)
         url_port = url.port
         if (url.scheme, url_port) in DEFAULT_PORTS:
