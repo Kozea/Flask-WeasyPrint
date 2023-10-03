@@ -1,6 +1,7 @@
 """Demonstration and testing application for Flask-WeasyPrint."""
 
 from flask import Flask, abort, redirect, render_template, request, url_for
+from weasyprint import __version__ as weasyprint_version
 
 # Disable the Flask’s default static file handling. (See below.)
 app = Flask(__name__, static_folder=None)
@@ -48,7 +49,10 @@ from flask_weasyprint import render_pdf  # noqa
 
 @app.route('/foo.pdf')
 def document_pdf():
-    return render_pdf(url_for('index'))
+    if int(weasyprint_version.split('.')[0]) >= 59:
+        return render_pdf(url_for('index'), uncompressed_pdf=True)
+    else:
+        return render_pdf(url_for('index'))
 
 # End of code specific to Flask-WeasyPrint.
 

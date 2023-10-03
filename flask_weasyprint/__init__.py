@@ -107,12 +107,13 @@ def make_url_fetcher(dispatcher=None,
                 server_name = EnvironBuilder(
                     path, base_url=base_url).server_name
                 for cookie_key, cookie_value in request.cookies.items():
-                    client.set_cookie(server_name, cookie_key, cookie_value)
+                    client.set_cookie(
+                        cookie_key, cookie_value, domain=server_name)
             response = client.get(path, base_url=base_url)
             if response.status_code == 200:
                 return {
                     'string': response.data, 'mime_type': response.mimetype,
-                    'encoding': response.charset, 'redirected_url': url}
+                    'encoding': 'utf-8', 'redirected_url': url}
             # The test client can follow redirects, but do it ourselves
             # to get access to the redirected URL.
             elif response.status_code in (301, 302, 303, 305, 307, 308):

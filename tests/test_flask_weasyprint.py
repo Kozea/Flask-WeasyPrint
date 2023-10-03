@@ -3,6 +3,7 @@
 import pytest
 from flask import Flask, json, jsonify, redirect, request
 from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
+from weasyprint import __version__ as weasyprint_version
 from werkzeug.test import ClientRedirectError
 
 from . import app, document_html
@@ -57,14 +58,17 @@ def test_pdf(url, filename, automatic, cookie):
     if url.endswith('.pdf'):
         client = app.test_client()
         if cookie:
-            client.set_cookie('', 'cookie', cookie)
+            client.set_cookie('cookie', cookie)
         response = client.get('/foo.pdf')
     else:
         with app.test_request_context('/foo/'):
-            response = render_pdf(
-                HTML(string=document_html()),
-                download_filename=filename,
-                automatic_download=automatic)
+            options = {
+                'download_filename': filename,
+                'automatic_download': automatic,
+            }
+            if int(weasyprint_version.split('.')[0]) >= 59:
+                options['uncompressed_pdf'] = True
+            response = render_pdf(HTML(string=document_html()), **options)
     assert response.status_code == 200
     assert response.mimetype == 'application/pdf'
     assert response.data.startswith(b'%PDF')
