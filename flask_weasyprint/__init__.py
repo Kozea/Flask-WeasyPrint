@@ -2,7 +2,6 @@
 
 from urllib.parse import urljoin, urlsplit
 
-import weasyprint
 from flask import current_app, has_request_context, request
 from werkzeug.test import Client, ClientRedirectError, EnvironBuilder
 from werkzeug.wrappers import Response
@@ -71,8 +70,7 @@ def make_flask_url_dispatcher():
     return dispatch
 
 
-def make_url_fetcher(dispatcher=None,
-                     next_fetcher=weasyprint.default_url_fetcher):
+def make_url_fetcher(dispatcher=None, next_fetcher=True):
     """Return an function suitable as a ``url_fetcher`` in WeasyPrint.
 
     You generally don’t need to call this directly.
@@ -92,6 +90,10 @@ def make_url_fetcher(dispatcher=None,
     Typically ``base_url + path`` is equivalent to the passed URL.
 
     """
+    if next_fetcher is True:
+        from weasyprint import default_url_fetcher  # lazy loading
+        next_fetcher = default_url_fetcher
+
     if dispatcher is None:
         dispatcher = make_flask_url_dispatcher()
 
@@ -157,11 +159,13 @@ def HTML(*args, **kwargs):
     This requires a Flask :doc:`request context <flask:reqcontext>`.
 
     """
-    return _wrapper(weasyprint.HTML, *args, **kwargs)
+    from weasyprint import HTML  # lazy loading
+    return _wrapper(HTML, *args, **kwargs)
 
 
 def CSS(*args, **kwargs):
-    return _wrapper(weasyprint.CSS, *args, **kwargs)
+    from weasyprint import CSS  # lazy loading
+    return _wrapper(CSS, *args, **kwargs)
 
 
 CSS.__doc__ = HTML.__doc__.replace('HTML', 'CSS')
