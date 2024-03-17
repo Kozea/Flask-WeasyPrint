@@ -2,9 +2,10 @@
 
 import pytest
 from flask import Flask, json, jsonify, redirect, request
-from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
 from weasyprint import __version__ as weasyprint_version
 from werkzeug.test import ClientRedirectError
+
+from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
 
 from . import app, document_html
 

@@ -14,7 +14,7 @@ app = Flask(__name__, static_folder=None)
 
 @app.config.from_object
 class Config:
-    GRAPH_COLORS = ['#0C3795', '#752641', '#E47F00']
+    GRAPH_COLORS = ('#0C3795', '#752641', '#E47F00')
 
 
 @app.route('/')

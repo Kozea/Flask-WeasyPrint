@@ -146,7 +146,7 @@ def _wrapper(class_, *args, **kwargs):
     return class_(guess, *args, **kwargs)
 
 
-def HTML(*args, **kwargs):
+def HTML(*args, **kwargs):  # noqa: N802
     """Like :class:`weasyprint.HTML` but:
 
     * :func:`make_url_fetcher` is used to create an ``url_fetcher``
@@ -163,7 +163,7 @@ def HTML(*args, **kwargs):
     return _wrapper(HTML, *args, **kwargs)
 
 
-def CSS(*args, **kwargs):
+def CSS(*args, **kwargs):  # noqa: N802
     from weasyprint import CSS  # lazy loading
     return _wrapper(CSS, *args, **kwargs)
 
