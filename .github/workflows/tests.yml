@@ -16,8 +16,8 @@ jobs:
           - os: ubuntu-latest
             python-version: 'pypy-3.8'
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Ghostscript (Ubuntu)
@@ -25,10 +25,7 @@ jobs:
         run: sudo apt-get update -y && sudo apt-get install ghostscript -y
       - name: Install Pango and Ghostscript (MacOS)
         if: matrix.os == 'macos-latest'
-        run: |
-          rm /usr/local/bin/2to3
-          brew update
-          brew install pango ghostscript
+        run: brew install pango ghostscript
       - name: Install Pango and Ghostscript (Windows)
         if: matrix.os == 'windows-latest'
         run: |
