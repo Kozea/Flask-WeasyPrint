@@ -8,7 +8,7 @@ description = 'Make PDF in your Flask app with WeasyPrint'
 keywords = ['html', 'css', 'pdf', 'converter', 'flask', 'weasyprint']
 authors = [{name = 'Simon Sapin', email = 'simon.sapin@exyr.org'}]
 maintainers = [{name = 'CourtBouillon', email = 'contact@courtbouillon.org'}]
-requires-python = '>=3.7'
+requires-python = '>=3.9'
 readme = {file = 'README.rst', content-type = 'text/x-rst'}
 license = {file = 'LICENSE'}
 dependencies = [
@@ -24,11 +24,11 @@ classifiers = [
   'Programming Language :: Python',
   'Programming Language :: Python :: 3',
   'Programming Language :: Python :: 3 :: Only',
-  'Programming Language :: Python :: 3.8',
   'Programming Language :: Python :: 3.9',
   'Programming Language :: Python :: 3.10',
   'Programming Language :: Python :: 3.11',
   'Programming Language :: Python :: 3.12',
+  'Programming Language :: Python :: 3.13',
   'Programming Language :: Python :: Implementation :: CPython',
   'Programming Language :: Python :: Implementation :: PyPy',
   'Topic :: Internet :: WWW/HTTP :: Dynamic Content',

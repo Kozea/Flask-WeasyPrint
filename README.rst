@@ -2,7 +2,7 @@ Flask-WeasyPrint generates PDF files out of your Flask website thanks to
 WeasyPrint.
 
 * Free software: BSD license
-* For Python 3.8+, tested on CPython and PyPy
+* For Python 3.9+, tested on CPython and PyPy
 * Documentation: https://doc.courtbouillon.org/flask-weasyprint
 * Changelog: https://github.com/Kozea/Flask-WeasyPrint/releases
 * Code, issues, tests: https://github.com/Kozea/Flask-WeasyPrint
