@@ -201,6 +201,6 @@ def render_pdf(html, stylesheets=None, download_filename=None,
     return send_file(
         BytesIO(pdf),
         mimetype="application/pdf",
-        as_attachment=automatic_download,
+        as_attachment= False if not download_filename else automatic_download,
         download_name=download_filename,
     )
