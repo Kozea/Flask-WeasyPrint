@@ -20,8 +20,9 @@ def make_flask_url_dispatcher():
     has returned.
 
     Dispatch to the context’s app URLs below the context’s root URL. If the
-    application has a ``SERVER_NAME`` :doc:`configuration <flask:config>`, also
-    accept URLs that have that domain name or a subdomain thereof.
+    application has a ``SERVER_NAME`` :doc:`configuration <flask:config>` and
+    ``subdomain_matching`` is set, also accept URLs that have that domain name
+    or a subdomain thereof.
 
     """
     def parse_netloc(netloc):
@@ -33,7 +34,7 @@ def make_flask_url_dispatcher():
     root_path = request.script_root
 
     server_name = app.config.get('SERVER_NAME')
-    if server_name:
+    if server_name and app.subdomain_matching:
         hostname, port = parse_netloc(server_name)
 
         def accept(url):

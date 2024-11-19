@@ -111,7 +111,7 @@ def test_redirects():
 
 
 def test_dispatcher():
-    app = Flask(__name__)
+    app = Flask(__name__, subdomain_matching=True)
     app.config['PROPAGATE_EXCEPTIONS'] = True
 
     @app.route('/')
