@@ -71,10 +71,11 @@ def test_pdf(url, filename, automatic, cookie):
             response = render_pdf(HTML(string=document_html()), **options)
     assert response.status_code == 200
     assert response.mimetype == 'application/pdf'
-    assert response.data.startswith(b'%PDF')
+    data = b''.join(response.iter_encoded())
+    assert data.startswith(b'%PDF')
     if cookie:
-        assert cookie.encode() in response.data
-    assert b'/URI (https://courtbouillon.org/)' in response.data
+        assert cookie.encode() in data
+    assert b'/URI (https://courtbouillon.org/)' in data
     disposition = response.headers.get('Content-Disposition')
     if filename:
         position = 'attachment' if automatic else 'inline'
