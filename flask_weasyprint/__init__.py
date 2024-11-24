@@ -1,8 +1,9 @@
 """Make PDF in your Flask app with WeasyPrint."""
 
+from io import BytesIO
 from urllib.parse import urljoin, urlsplit
 
-from flask import current_app, has_request_context, request
+from flask import current_app, has_request_context, request, send_file
 from werkzeug.test import Client, ClientRedirectError, EnvironBuilder
 from werkzeug.wrappers import Response
 
@@ -197,10 +198,7 @@ def render_pdf(html, stylesheets=None, download_filename=None,
     if not hasattr(html, 'write_pdf'):
         html = HTML(html)
     pdf = html.write_pdf(stylesheets=stylesheets, **options)
-    response = current_app.response_class(pdf, mimetype='application/pdf')
-    if download_filename:
-        response.headers.add(
-            'Content-Disposition',
-            'attachment' if automatic_download else 'inline',
-            filename=download_filename)
-    return response
+    as_attachment = automatic_download if download_filename else False
+    return send_file(
+        BytesIO(pdf), mimetype="application/pdf", as_attachment=as_attachment,
+        download_name=download_filename)
