@@ -148,7 +148,7 @@ def _wrapper(class_, *args, **kwargs):
     return class_(guess, *args, **kwargs)
 
 
-def HTML(*args, **kwargs):
+def HTML(*args, **kwargs):  # noqa: N802
     """Like :class:`weasyprint.HTML` but:
 
     * :func:`make_url_fetcher` is used to create an ``url_fetcher``
@@ -165,7 +165,7 @@ def HTML(*args, **kwargs):
     return _wrapper(HTML, *args, **kwargs)
 
 
-def CSS(*args, **kwargs):
+def CSS(*args, **kwargs):  # noqa: N802
     from weasyprint import CSS  # lazy loading
     return _wrapper(CSS, *args, **kwargs)
 
@@ -200,5 +200,5 @@ def render_pdf(html, stylesheets=None, download_filename=None,
     pdf = html.write_pdf(stylesheets=stylesheets, **options)
     as_attachment = automatic_download if download_filename else False
     return send_file(
-        BytesIO(pdf), mimetype="application/pdf", as_attachment=as_attachment,
+        BytesIO(pdf), mimetype='application/pdf', as_attachment=as_attachment,
         download_name=download_filename)

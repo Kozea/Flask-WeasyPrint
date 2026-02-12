@@ -2,9 +2,10 @@
 
 import pytest
 from flask import Flask, json, jsonify, redirect, request
-from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
 from weasyprint import __version__ as weasyprint_version
 from werkzeug.test import ClientRedirectError
+
+from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
 
 from . import app, document_html
 
@@ -47,13 +48,13 @@ def test_wrappers():
     assert html.write_pdf(stylesheets=[css]).startswith(b'%PDF')
 
 
-@pytest.mark.parametrize('url, filename, automatic, cookie', (
+@pytest.mark.parametrize(('url', 'filename', 'automatic', 'cookie'), [
     ('/foo.pdf', None, None, None),
     ('/foo.pdf', None, None, 'cookie value'),
     ('/foo/', None, True, None),
     ('/foo/', 'bar.pdf', True, None),
     ('/foo/', 'bar.pdf', False, None),
-))
+])
 def test_pdf(url, filename, automatic, cookie):
     if url.endswith('.pdf'):
         client = app.test_client()
@@ -107,7 +108,7 @@ def test_redirects():
     assert result['redirected_url'] == 'http://localhost/d'
     with pytest.raises(ClientRedirectError):
         fetcher('http://localhost/1')
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='404'):
         fetcher('http://localhost/nonexistent')
 
 
@@ -205,12 +206,12 @@ def test_dispatcher():
     assert_dummy('http://a.net/b/')
 
 
-@pytest.mark.parametrize('url', (
+@pytest.mark.parametrize('url', [
     'http://example.net/Unïĉodé/pass !',
     'http://example.net/Unïĉodé/pass !'.encode(),
     'http://example.net/foo%20bar/p%61ss%C2%A0!',
     b'http://example.net/foo%20bar/p%61ss%C2%A0!',
-))
+])
 def test_funky_urls(url):
     with app.test_request_context(base_url='http://example.net/'):
         fetcher = make_url_fetcher()
