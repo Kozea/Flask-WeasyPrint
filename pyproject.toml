@@ -13,7 +13,7 @@ readme = {file = 'README.rst', content-type = 'text/x-rst'}
 license = {file = 'LICENSE'}
 dependencies = [
   'flask >=2.3.0',
-  'weasyprint >=53.0',
+  'weasyprint >=68.0',
 ]
 classifiers = [
   'Development Status :: 5 - Production/Stable',
