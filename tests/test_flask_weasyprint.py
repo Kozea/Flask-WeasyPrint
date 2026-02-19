@@ -1,10 +1,13 @@
 """Tests for Flask-WeasyPrint."""
 
+from urllib.error import HTTPError
+
 import pytest
 from flask import Flask, json, jsonify, redirect, request
-from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
 from weasyprint import __version__ as weasyprint_version
-from werkzeug.test import ClientRedirectError
+from weasyprint.urls import URLFetcher, URLFetcherResponse
+
+from flask_weasyprint import CSS, HTML, make_url_fetcher, render_pdf
 
 from . import app, document_html
 
@@ -18,15 +21,15 @@ def test_url_fetcher():
     with app.test_request_context(base_url='http://example.org/bar/'):
         fetcher = make_url_fetcher()
 
-    result = fetcher('http://example.org/bar/')
-    assert result['string'].strip().startswith(b'<html>')
-    assert result['mime_type'] == 'text/html'
-    assert result['encoding'] == 'utf-8'
-    assert result['redirected_url'] == 'http://example.org/bar/foo/'
+    response = fetcher('http://example.org/bar/')
+    assert response.read().strip().startswith(b'<html>')
+    assert response.content_type == 'text/html'
+    assert response.charset == 'utf-8'
+    assert response.url == 'http://example.org/bar/foo/'
 
-    result = fetcher('http://example.org/bar/foo/graph?data=1&labels=A')
-    assert result['string'].strip().startswith(b'<svg xmlns=')
-    assert result['mime_type'] == 'image/svg+xml'
+    response = fetcher('http://example.org/bar/foo/graph?data=1&labels=A')
+    assert response.read().strip().startswith(b'<svg xmlns=')
+    assert response.content_type == 'image/svg+xml'
 
     # Also works with a custom dispatcher
     def custom_dispatcher(url_string):
@@ -34,9 +37,9 @@ def test_url_fetcher():
     with app.test_request_context(base_url='http://example.org/bar/'):
         fetcher = make_url_fetcher(dispatcher=custom_dispatcher)
 
-    result = fetcher('test://')
-    assert result['string'].strip().startswith(b'<svg xmlns=')
-    assert result['mime_type'] == 'image/svg+xml'
+    response = fetcher('test://')
+    assert response.read().strip().startswith(b'<svg xmlns=')
+    assert response.content_type == 'image/svg+xml'
 
 
 def test_wrappers():
@@ -47,13 +50,13 @@ def test_wrappers():
     assert html.write_pdf(stylesheets=[css]).startswith(b'%PDF')
 
 
-@pytest.mark.parametrize('url, filename, automatic, cookie', (
+@pytest.mark.parametrize(('url', 'filename', 'automatic', 'cookie'), [
     ('/foo.pdf', None, None, None),
     ('/foo.pdf', None, None, 'cookie value'),
     ('/foo/', None, True, None),
     ('/foo/', 'bar.pdf', True, None),
     ('/foo/', 'bar.pdf', False, None),
-))
+])
 def test_pdf(url, filename, automatic, cookie):
     if url.endswith('.pdf'):
         client = app.test_client()
@@ -102,12 +105,14 @@ def test_redirects():
 
     with app.test_request_context():
         fetcher = make_url_fetcher()
-    result = fetcher('http://localhost/a')
-    assert result['string'] == b'Ok'
-    assert result['redirected_url'] == 'http://localhost/d'
-    with pytest.raises(ClientRedirectError):
+    response = fetcher('http://localhost/a')
+    assert response.read() == b'Ok'
+    assert response.url == 'http://localhost/d'
+    # TODO: keep HTTPError with WeasyPrint > 68.1, see #2686.
+    # with pytest.raises(HTTPError, match='infinite loop'):
+    with pytest.raises((HTTPError, RecursionError)):
         fetcher('http://localhost/1')
-    with pytest.raises(ValueError):
+    with pytest.raises(HTTPError, match='404'):
         fetcher('http://localhost/nonexistent')
 
 
@@ -124,21 +129,22 @@ def test_dispatcher():
         app = [subdomain, request.script_root, request.path, query_string]
         return jsonify(app=app)
 
-    def dummy_fetcher(url):
-        return {'string': 'dummy ' + url}
+    class DummyFetcher(URLFetcher):
+        def fetch(self, url, headers=None):
+            return URLFetcherResponse(url, f'dummy {url}')
 
     def assert_app(url, host, script_root, path, query_string=''):
         """The URL was dispatched to the app with these parameters."""
-        assert json.loads(dispatcher(url)['string']) == {
+        assert json.loads(dispatcher(url).read()) == {
             'app': [host, script_root, path, query_string]}
 
     def assert_dummy(url):
         """The URL was not dispatched, the default fetcher was used."""
-        assert dispatcher(url)['string'] == 'dummy ' + url
+        assert dispatcher(url).read() == f'dummy {url}'.encode()
 
     # No SERVER_NAME config, default port
     with app.test_request_context(base_url='http://a.net/b/'):
-        dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
+        dispatcher = make_url_fetcher(next_fetcher=DummyFetcher)
     assert_app('http://a.net/b', '', '/b', '/')
     assert_app('http://a.net/b/', '', '/b', '/')
     assert_app('http://a.net/b/', '', '/b', '/')
@@ -152,7 +158,7 @@ def test_dispatcher():
 
     # No SERVER_NAME config, explicit default port
     with app.test_request_context(base_url='http://a.net:80/b/'):
-        dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
+        dispatcher = make_url_fetcher(next_fetcher=DummyFetcher)
     assert_app('http://a.net/b', '', '/b', '/')
     assert_app('http://a.net/b/', '', '/b', '/')
     assert_app('http://a.net/b/c/d?e', '', '/b', '/c/d', 'e')
@@ -165,7 +171,7 @@ def test_dispatcher():
 
     # Change the context’s port number
     with app.test_request_context(base_url='http://a.net:8888/b/'):
-        dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
+        dispatcher = make_url_fetcher(next_fetcher=DummyFetcher)
     assert_app('http://a.net:8888/b', '', '/b', '/')
     assert_app('http://a.net:8888/b/', '', '/b', '/')
     assert_app('http://a.net:8888/b/cd?e', '', '/b', '/cd', 'e')
@@ -180,7 +186,7 @@ def test_dispatcher():
     # Add a SERVER_NAME config
     app.config['SERVER_NAME'] = 'a.net'
     with app.test_request_context():
-        dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
+        dispatcher = make_url_fetcher(next_fetcher=DummyFetcher)
     assert_app('http://a.net', '', '', '/')
     assert_app('http://a.net/', '', '', '/')
     assert_app('http://a.net/b/c/d?e', '', '', '/b/c/d', 'e')
@@ -194,7 +200,7 @@ def test_dispatcher():
     # SERVER_NAME with a port number
     app.config['SERVER_NAME'] = 'a.net:8888'
     with app.test_request_context():
-        dispatcher = make_url_fetcher(next_fetcher=dummy_fetcher)
+        dispatcher = make_url_fetcher(next_fetcher=DummyFetcher)
     assert_app('http://a.net:8888', '', '', '/')
     assert_app('http://a.net:8888/', '', '', '/')
     assert_app('http://a.net:8888/b/c/d?e', '', '', '/b/c/d', 'e')
@@ -205,13 +211,11 @@ def test_dispatcher():
     assert_dummy('http://a.net/b/')
 
 
-@pytest.mark.parametrize('url', (
+@pytest.mark.parametrize('url', [
     'http://example.net/Unïĉodé/pass !',
-    'http://example.net/Unïĉodé/pass !'.encode(),
     'http://example.net/foo%20bar/p%61ss%C2%A0!',
-    b'http://example.net/foo%20bar/p%61ss%C2%A0!',
-))
+])
 def test_funky_urls(url):
     with app.test_request_context(base_url='http://example.net/'):
         fetcher = make_url_fetcher()
-    assert fetcher(url)['string'] == 'pass !'.encode()
+    assert fetcher(url).read() == 'pass !'.encode()

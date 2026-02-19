@@ -2,9 +2,10 @@
 
 from io import BytesIO
 from urllib.parse import urljoin, urlsplit
+from urllib.request import BaseHandler
 
 from flask import current_app, has_request_context, request, send_file
-from werkzeug.test import Client, ClientRedirectError, EnvironBuilder
+from werkzeug.test import Client, EnvironBuilder
 from werkzeug.wrappers import Response
 
 VERSION = __version__ = '1.1.0'
@@ -73,7 +74,7 @@ def make_flask_url_dispatcher():
 
 
 def make_url_fetcher(dispatcher=None, next_fetcher=True):
-    """Return an function suitable as a ``url_fetcher`` in WeasyPrint.
+    """Return a URL fetcher that handles the Flask app routes internally.
 
     You generally don’t need to call this directly.
 
@@ -92,45 +93,44 @@ def make_url_fetcher(dispatcher=None, next_fetcher=True):
     Typically ``base_url + path`` is equivalent to the passed URL.
 
     """
+    from weasyprint.urls import URLFetcher, URLFetcherResponse  # lazy loading
+
     if next_fetcher is True:
-        from weasyprint import default_url_fetcher  # lazy loading
-        next_fetcher = default_url_fetcher
+        next_fetcher = URLFetcher
 
     if dispatcher is None:
         dispatcher = make_flask_url_dispatcher()
 
-    def flask_url_fetcher(url):
-        redirect_chain = set()
-        while True:
-            result = dispatcher(url)
-            if result is None:
-                return next_fetcher(url)
-            app, base_url, path = result
-            client = Client(app, response_wrapper=Response)
-            if has_request_context() and request.cookies:
-                server_name = EnvironBuilder(
-                    path, base_url=base_url).server_name
-                for cookie_key, cookie_value in request.cookies.items():
-                    client.set_cookie(
-                        cookie_key, cookie_value, domain=server_name)
-            response = client.get(path, base_url=base_url)
-            if response.status_code == 200:
-                return {
-                    'string': response.data, 'mime_type': response.mimetype,
-                    'encoding': 'utf-8', 'redirected_url': url}
-            # The test client can follow redirects, but do it ourselves
-            # to get access to the redirected URL.
-            elif response.status_code in (301, 302, 303, 305, 307, 308):
-                redirect_chain.add(url)
-                url = urljoin(url, response.location)
-                if url in redirect_chain:
-                    raise ClientRedirectError('loop detected')
-            else:
-                raise ValueError(
-                    'Flask-WeasyPrint got HTTP status '
-                    f'{response.status} for {urljoin(base_url, path)}')
+    class FlaskHandler(BaseHandler):
+        def default_open(self, req):
+            url = req.full_url
+            if result := dispatcher(url):
+                app, base_url, path = result
+                client = Client(app, response_wrapper=Response)
+                if has_request_context() and request.cookies:
+                    server_name = EnvironBuilder(path, base_url=base_url).server_name
+                    for cookie_key, cookie_value in request.cookies.items():
+                        client.set_cookie(cookie_key, cookie_value, domain=server_name)
+                response = client.get(path, base_url=base_url)
+                response = URLFetcherResponse(
+                        url, response.data, response.headers, response.status_code)
+                response.msg = ''
+                return response
 
-    return flask_url_fetcher
+    class FlaskFetcher(next_fetcher or URLFetcher):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.add_handler(FlaskHandler())
+
+        def fetch(self, url, headers=None):
+            if dispatcher(url) is None:
+                if next_fetcher:
+                    return super().fetch(url, headers)
+                else:
+                    raise ValueError(f'Unknown Flask app URL: {url}')
+            return URLFetcher.fetch(self, url, headers)
+
+    return FlaskFetcher()
 
 
 def _wrapper(class_, *args, **kwargs):
@@ -148,7 +148,7 @@ def _wrapper(class_, *args, **kwargs):
     return class_(guess, *args, **kwargs)
 
 
-def HTML(*args, **kwargs):
+def HTML(*args, **kwargs):  # noqa: N802
     """Like :class:`weasyprint.HTML` but:
 
     * :func:`make_url_fetcher` is used to create an ``url_fetcher``
@@ -165,7 +165,7 @@ def HTML(*args, **kwargs):
     return _wrapper(HTML, *args, **kwargs)
 
 
-def CSS(*args, **kwargs):
+def CSS(*args, **kwargs):  # noqa: N802
     from weasyprint import CSS  # lazy loading
     return _wrapper(CSS, *args, **kwargs)
 
@@ -200,5 +200,5 @@ def render_pdf(html, stylesheets=None, download_filename=None,
     pdf = html.write_pdf(stylesheets=stylesheets, **options)
     as_attachment = automatic_download if download_filename else False
     return send_file(
-        BytesIO(pdf), mimetype="application/pdf", as_attachment=as_attachment,
+        BytesIO(pdf), mimetype='application/pdf', as_attachment=as_attachment,
         download_name=download_filename)

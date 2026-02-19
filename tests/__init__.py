@@ -14,7 +14,7 @@ app = Flask(__name__, static_folder=None)
 
 @app.config.from_object
 class Config:
-    GRAPH_COLORS = ['#0C3795', '#752641', '#E47F00']
+    GRAPH_COLORS = ('#0C3795', '#752641', '#E47F00')
 
 
 @app.route('/')
@@ -115,8 +115,8 @@ def static(filename):
         abort(404)
 
 
-@app.route(u'/Unïĉodé/<stuff>')
-@app.route(u'/foo bar/<stuff>')
+@app.route('/Unïĉodé/<stuff>')
+@app.route('/foo bar/<stuff>')
 def funky_urls(stuff):
     return stuff
 
