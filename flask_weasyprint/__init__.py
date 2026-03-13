@@ -8,7 +8,7 @@ from flask import current_app, has_request_context, request, send_file
 from werkzeug.test import Client, EnvironBuilder
 from werkzeug.wrappers import Response
 
-VERSION = __version__ = '1.1.0'
+VERSION = __version__ = '1.2.0'
 DEFAULT_PORTS = (('http', 80), ('https', 443))
 
 

@@ -2,6 +2,22 @@ Changelog
 =========
 
 
+Version 1.2.0
+~~~~~~~~~~~~~
+
+Released on 2026-03-13.
+
+Drop support of Python 3.8 to 3.10, support Python 3.13 and 3.14.
+
+Use new WeasyPrint URL fetcher, require WeasyPrint >= 68.0.
+
+Lazy load WeasyPrint for improved live-reloading speed.
+
+Only match SERVER_NAME subdomains when explicitly asked, to match Flask behavior.
+
+Allow download filenames with non-ASCII characters.
+
+
 Version 1.1.0
 ~~~~~~~~~~~~~
 
