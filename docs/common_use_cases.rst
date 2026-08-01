@@ -68,6 +68,21 @@ styles. Here the "Get as PDF" link is not displayed in the PDF itself, although
 it still exists in the HTML.
 
 
+Cookies
+-------
+
+By default, Flask-WeasyPrint detects URLs leading to the application and don’t
+send HTTP requests when possible. But sometimes, when requests have to be sent,
+cookies are often needed for authentication.
+
+With Flask-WeasyPrint, WeasyPrint automatically resends the cookies of the
+original request, just as if they were sent by the browser.
+
+As this feature gives WeasyPrint the same authentication rights as the user,
+please check that the rights management is done correctly in your application,
+and that the GET routes don’t change the state of the application.
+
+
 Testing Application
 -------------------
 
