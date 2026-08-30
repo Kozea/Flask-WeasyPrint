@@ -59,7 +59,7 @@ exclude_lines = ['pragma: no cover', 'def __repr__', 'raise NotImplementedError'
 omit = ['.*']
 
 [tool.ruff.lint]
-select = ['E', 'W', 'F', 'I', 'N', 'RUF', 'T20', 'PIE', 'PT', 'RSE', 'UP', 'Q']
+select = ['E', 'W', 'F', 'I', 'N', 'RUF', 'T20', 'PIE', 'PT', 'RSE', 'UP', 'Q', 'LOG', 'G']
 ignore = ['RUF001', 'RUF002', 'RUF003']
 
 [tool.ruff.lint.flake8-quotes]
