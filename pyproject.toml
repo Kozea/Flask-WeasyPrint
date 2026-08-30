@@ -44,7 +44,7 @@ Changelog = 'https://github.com/Kozea/Flask-WeasyPrint/releases'
 Donation = 'https://opencollective.com/courtbouillon'
 
 [project.optional-dependencies]
-doc = ['sphinx', 'sphinx_rtd_theme']
+doc = ['sphinx', 'furo']
 test = ['pytest', 'ruff']
 
 [tool.flit.sdist]
